@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SINISTER HOME</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Orbitron:wght@700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --bg:#080b0f;
+  --frame:#0d0f14;
+  --brand:#1a2030;
+  --logo:#c8a84a;
+  --logo-glow:rgba(200,168,74,0.5);
+  --cyan:#00e5ff;
+  --green:#00ff88;
+  --yellow:#ffcc00;
+  --scanline:rgba(0,0,0,0.12);
+  --vignette:rgba(0,0,0,0.7);
+  --btn-bg:linear-gradient(145deg,#151a22,#0d1018);
+  --btn-border:#1a2030;
+}
+
+body{
+  background:var(--bg);
+  color:#fff;
+  font-family:'VT323', monospace;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* CRT scanlines overlay */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    var(--scanline) 0px,
+    var(--scanline) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* Vignette */
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:radial-gradient(ellipse at center, transparent 50%, var(--vignette) 100%);
+  pointer-events:none;
+  z-index:9998;
+}
+
+/* ── HEADER ── */
+header{
+  background:linear-gradient(90deg,#0a0c10,#111520,#0a0c10);
+  border-bottom:1px solid var(--brand);
+  padding:10px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+}
+
+.logo{
+  font-family:'Press Start 2P', monospace;
+  font-size:14px;
+  color:var(--logo);
+  text-shadow:0 0 10px var(--logo-glow);
+  letter-spacing:2px;
+}
+
+.logo span{
+  color:var(--cyan);
+  text-shadow:0 0 10px rgba(0,229,255,0.6);
+}
+
+.clock{
+  font-family:'VT323', monospace;
+  font-size:22px;
+  color:var(--cyan);
+  text-shadow:0 0 8px rgba(0,229,255,0.5);
+  letter-spacing:2px;
+}
+
+/* Weather widget */
+.weather{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:'VT323', monospace;
+  padding:4px 14px;
+  border:1px solid var(--brand);
+  border-radius:20px;
+  background:rgba(13,16,24,0.5);
+}
+.wx-icon{
+  font-size:20px;
+  line-height:1;
+}
+.wx-temp{
+  font-size:22px;
+  color:var(--logo);
+  text-shadow:0 0 8px var(--logo-glow);
+  letter-spacing:1px;
+}
+.wx-loc{
+  font-size:15px;
+  color:#5a7080;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  max-width:120px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media (max-width:600px){
+  .wx-loc{ display:none; }
+}
+
+/* ── MAIN CONTENT ── */
+main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:20px;
+  overflow:hidden;
+}
+
+/* Screen area - where apps open */
+#screen-area{
+  flex:1;
+  background:#000;
+  border:2px solid var(--brand);
+  border-radius:4px;
+  position:relative;
+  overflow:hidden;
+  margin-bottom:16px;
+  min-height:0;
+}
+
+#screen-area iframe{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+/* Home screen inside the screen area */
+#home-screen{
+  position:absolute;
+  inset:0;
+  background:var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(0,229,255,0.06), transparent 35%),
+    radial-gradient(circle at 85% 60%, rgba(200,168,74,0.05), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(145,70,255,0.05), transparent 45%);
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  padding:24px 28px 50px 28px;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+
+/* Retro scrollbar styling */
+#home-screen::-webkit-scrollbar{
+  width:10px;
+}
+#home-screen::-webkit-scrollbar-track{
+  background:#0a0c10;
+}
+#home-screen::-webkit-scrollbar-thumb{
+  background:var(--brand);
+  border-radius:5px;
+}
+#home-screen::-webkit-scrollbar-thumb:hover{
+  background:var(--cyan);
+}
+
+.home-title{
+  font-family:'Press Start 2P', monospace;
+  font-size:11px;
+  color:var(--logo);
+  text-shadow:0 0 15px var(--logo-glow);
+  letter-spacing:3px;
+  margin-bottom:8px;
+  text-align:center;
+}
+
+.home-subtitle{
+  font-family:'VT323', monospace;
+  font-size:20px;
+  color:#4a6070;
+  letter-spacing:4px;
+  margin-bottom:20px;
+  text-align:center;
+}
+
+/* App grid */
+.app-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+  gap:18px;
+  width:100%;
+  padding:10px 4px 24px 4px;
+}
+
+/* Section headers - neon signage style */
+.section-header{
+  width:100%;
+  font-family:'Press Start 2P', monospace;
+  font-size:11px;
+  color:var(--logo);
+  letter-spacing:2px;
+  margin:30px 0 6px 0;
+  padding:0 0 10px 4px;
+  text-align:left;
+  position:relative;
+  text-shadow:0 0 12px var(--logo-glow), 0 0 24px var(--logo-glow);
+  animation:headerGlow 3s ease-in-out infinite;
+}
+.section-header::after{
+  content:'';
+  position:absolute;
+  left:0; bottom:0;
+  width:100%;
+  height:2px;
+  background:linear-gradient(90deg, var(--logo), transparent 80%);
+  box-shadow:0 0 8px var(--logo-glow);
+}
+.section-header:first-of-type{
+  margin-top:0;
+}
+@keyframes headerGlow{
+  0%,100%{ opacity:0.85; }
+  50%{ opacity:1; }
+}
+
+.app-tile{
+  background:linear-gradient(145deg, rgba(26,32,48,0.55), rgba(13,16,24,0.55));
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;
+  padding:24px 14px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  cursor:pointer;
+  transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s, border-color 0.25s;
+  position:relative;
+  overflow:hidden;
+  min-height:150px;
+  animation:tileFloat 6s ease-in-out infinite;
+}
+
+/* Stagger the float so tiles don't all bob in sync */
+.app-tile:nth-child(3n){ animation-delay:-2s; }
+.app-tile:nth-child(3n+1){ animation-delay:-4s; }
+
+@keyframes tileFloat{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-4px); }
+}
+
+/* Animated shimmer sweep across the glass */
+.app-tile::before{
+  content:'';
+  position:absolute;
+  top:0; left:-120%;
+  width:80%; height:100%;
+  background:linear-gradient(105deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform:skewX(-20deg);
+  transition:left 0.6s ease;
+}
+.app-tile:hover::before{
+  left:120%;
+}
+
+/* Glowing gradient ring on the inside */
+.app-tile::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:14px;
+  padding:1px;
+  background:linear-gradient(135deg, transparent, transparent);
+  opacity:0;
+  transition:opacity 0.25s;
+  pointer-events:none;
+}
+
+.app-tile:hover{
+  transform:translateY(-8px) scale(1.04);
+  border-color:var(--cyan);
+  box-shadow:0 12px 40px rgba(0,229,255,0.25), inset 0 0 20px rgba(0,229,255,0.05);
+  animation-play-state:paused;
+  z-index:5;
+}
+
+.app-tile:active{
+  transform:translateY(-4px) scale(1.01);
+}
+
+.app-icon{
+  font-size:42px;
+  line-height:1;
+  filter:drop-shadow(0 0 8px rgba(0,229,255,0.3));
+  transition:transform 0.25s;
+}
+.app-tile:hover .app-icon{
+  transform:scale(1.15);
+}
+
+.app-name{
+  font-family:'VT323', monospace;
+  font-size:19px;
+  color:var(--cyan);
+  letter-spacing:1px;
+  text-align:center;
+  text-shadow:0 0 6px rgba(0,229,255,0.4);
+  line-height:1.1;
+}
+
+.app-desc{
+  font-family:'VT323', monospace;
+  font-size:14px;
+  color:#5a7080;
+  letter-spacing:1px;
+  text-align:center;
+}
+
+/* Specific tile accent colors */
+.app-tile.sinister-tv:hover{ border-color:var(--green); box-shadow:0 0 20px rgba(0,255,136,0.15); }
+.app-tile.sinister-tv .app-name{ color:var(--green); text-shadow:0 0 6px rgba(0,255,136,0.4); }
+
+.app-tile.youtube:hover{ border-color:#ff0000; box-shadow:0 0 20px rgba(255,0,0,0.15); }
+.app-tile.youtube .app-name{ color:#ff4444; text-shadow:0 0 6px rgba(255,68,68,0.4); }
+
+.app-tile.pluto:hover{ border-color:#f8d900; box-shadow:0 0 20px rgba(248,217,0,0.15); }
+.app-tile.pluto .app-name{ color:var(--yellow); text-shadow:0 0 6px rgba(255,204,0,0.4); }
+
+.app-tile.tubi:hover{ border-color:#f57120; box-shadow:0 0 20px rgba(245,113,32,0.15); }
+.app-tile.tubi .app-name{ color:#f57120; text-shadow:0 0 6px rgba(245,113,32,0.4); }
+
+.app-tile.twitch:hover{ border-color:#9146ff; box-shadow:0 0 20px rgba(145,70,255,0.15); }
+.app-tile.twitch .app-name{ color:#9146ff; text-shadow:0 0 6px rgba(145,70,255,0.4); }
+
+.app-tile.spotify:hover{ border-color:#1db954; box-shadow:0 0 20px rgba(29,185,84,0.15); }
+.app-tile.spotify .app-name{ color:#1db954; text-shadow:0 0 6px rgba(29,185,84,0.4); }
+
+.app-tile.localnow:hover{ border-color:#00b3e6; box-shadow:0 0 20px rgba(0,179,230,0.15); }
+.app-tile.localnow .app-name{ color:#00b3e6; text-shadow:0 0 6px rgba(0,179,230,0.4); }
+
+.app-tile.roku:hover{ border-color:#662d91; box-shadow:0 0 20px rgba(102,45,145,0.15); }
+.app-tile.roku .app-name{ color:#a05cd5; text-shadow:0 0 6px rgba(160,92,213,0.4); }
+
+.app-tile.popcornflix:hover{ border-color:#e6b800; box-shadow:0 0 20px rgba(230,184,0,0.15); }
+.app-tile.popcornflix .app-name{ color:#e6b800; text-shadow:0 0 6px rgba(230,184,0,0.4); }
+
+
+.app-tile.plex:hover{ border-color:#e5a00d; box-shadow:0 0 20px rgba(229,160,13,0.15); }
+.app-tile.plex .app-name{ color:#e5a00d; text-shadow:0 0 6px rgba(229,160,13,0.4); }
+
+
+.app-tile.rakuten:hover{ border-color:#bf0000; box-shadow:0 0 20px rgba(191,0,0,0.15); }
+.app-tile.rakuten .app-name{ color:#e63c3c; text-shadow:0 0 6px rgba(230,60,60,0.4); }
+
+
+
+
+.app-tile.fawesome:hover{ border-color:#ff6b35; box-shadow:0 0 20px rgba(255,107,53,0.15); }
+.app-tile.fawesome .app-name{ color:#ff6b35; text-shadow:0 0 6px rgba(255,107,53,0.4); }
+
+.app-tile.arte:hover{ border-color:#ff7f2a; box-shadow:0 0 20px rgba(255,127,42,0.15); }
+.app-tile.arte .app-name{ color:#ff7f2a; text-shadow:0 0 6px rgba(255,127,42,0.4); }
+
+
+.app-tile.pbs:hover{ border-color:#2638c4; box-shadow:0 0 20px rgba(38,56,196,0.15); }
+.app-tile.pbs .app-name{ color:#5b6ee8; text-shadow:0 0 6px rgba(91,110,232,0.4); }
+
+.app-tile.oldgames:hover{ border-color:#00ff88; box-shadow:0 0 20px rgba(0,255,136,0.15); }
+.app-tile.oldgames .app-name{ color:#00ff88; text-shadow:0 0 6px rgba(0,255,136,0.4); }
+
+.app-tile.playbrain:hover{ border-color:#b57edc; box-shadow:0 0 20px rgba(181,126,220,0.15); }
+.app-tile.playbrain .app-name{ color:#b57edc; text-shadow:0 0 6px rgba(181,126,220,0.4); }
+
+.app-tile.newgrounds:hover{ border-color:#ff9900; box-shadow:0 0 20px rgba(255,153,0,0.15); }
+.app-tile.newgrounds .app-name{ color:#ff9900; text-shadow:0 0 6px rgba(255,153,0,0.4); }
+
+.app-tile.coolmath:hover{ border-color:#ffd23f; box-shadow:0 0 20px rgba(255,210,63,0.15); }
+.app-tile.coolmath .app-name{ color:#ffd23f; text-shadow:0 0 6px rgba(255,210,63,0.4); }
+
+.app-tile.itch:hover{ border-color:#fa5c5c; box-shadow:0 0 20px rgba(250,92,92,0.15); }
+.app-tile.itch .app-name{ color:#fa5c5c; text-shadow:0 0 6px rgba(250,92,92,0.4); }
+
+
+.app-tile.lichess:hover{ border-color:#d0d0d0; box-shadow:0 0 20px rgba(208,208,208,0.15); }
+.app-tile.lichess .app-name{ color:#d0d0d0; text-shadow:0 0 6px rgba(208,208,208,0.4); }
+
+.app-tile.agar:hover{ border-color:#ff5b5b; box-shadow:0 0 20px rgba(255,91,91,0.15); }
+.app-tile.agar .app-name{ color:#ff5b5b; text-shadow:0 0 6px rgba(255,91,91,0.4); }
+
+.app-tile.skribbl:hover{ border-color:#00c2c7; box-shadow:0 0 20px rgba(0,194,199,0.15); }
+.app-tile.skribbl .app-name{ color:#00c2c7; text-shadow:0 0 6px rgba(0,194,199,0.4); }
+
+
+
+.app-tile.cookieclicker:hover{ border-color:#c68958; box-shadow:0 0 20px rgba(198,137,88,0.15); }
+.app-tile.cookieclicker .app-name{ color:#c68958; text-shadow:0 0 6px rgba(198,137,88,0.4); }
+
+
+.app-tile.eightball:hover{ border-color:#0a7d2c; box-shadow:0 0 20px rgba(10,125,44,0.15); }
+.app-tile.eightball .app-name{ color:#2ecc71; text-shadow:0 0 6px rgba(46,204,113,0.4); }
+
+.app-tile.slither:hover{ border-color:#4caf50; box-shadow:0 0 20px rgba(76,175,80,0.15); }
+.app-tile.slither .app-name{ color:#4caf50; text-shadow:0 0 6px rgba(76,175,80,0.4); }
+
+.app-tile.shellshock:hover{ border-color:#f4c430; box-shadow:0 0 20px rgba(244,196,48,0.15); }
+.app-tile.shellshock .app-name{ color:#f4c430; text-shadow:0 0 6px rgba(244,196,48,0.4); }
+
+.app-tile.merczone:hover{ border-color:#4a7c3a; box-shadow:0 0 20px rgba(74,124,58,0.15); }
+.app-tile.merczone .app-name{ color:#7cb342; text-shadow:0 0 6px rgba(124,179,66,0.4); }
+
+.app-tile.deadshot:hover{ border-color:#c0392b; box-shadow:0 0 20px rgba(192,57,43,0.15); }
+.app-tile.deadshot .app-name{ color:#e74c3c; text-shadow:0 0 6px rgba(231,76,60,0.4); }
+
+.app-tile.venge:hover{ border-color:#00d9ff; box-shadow:0 0 20px rgba(0,217,255,0.15); }
+.app-tile.venge .app-name{ color:#00d9ff; text-shadow:0 0 6px rgba(0,217,255,0.4); }
+
+.app-tile.zombs:hover{ border-color:#ff9f1c; box-shadow:0 0 20px rgba(255,159,28,0.15); }
+.app-tile.zombs .app-name{ color:#ff9f1c; text-shadow:0 0 6px rgba(255,159,28,0.4); }
+
+.app-tile.krunker:hover{ border-color:#e8663d; box-shadow:0 0 20px rgba(232,102,61,0.15); }
+.app-tile.krunker .app-name{ color:#e8663d; text-shadow:0 0 6px rgba(232,102,61,0.4); }
+
+
+
+
+/* ── NOW PLAYING BAR ── */
+#now-playing{
+  background:linear-gradient(90deg,#0a0c10,#111520,#0a0c10);
+  border:1px solid var(--brand);
+  border-radius:4px;
+  padding:8px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+}
+
+.np-label{
+  font-family:'VT323', monospace;
+  font-size:16px;
+  color:#4a6070;
+  letter-spacing:2px;
+}
+
+#np-app{
+  font-family:'VT323', monospace;
+  font-size:20px;
+  color:var(--cyan);
+  text-shadow:0 0 8px rgba(0,229,255,0.5);
+  letter-spacing:2px;
+}
+
+/* ── CONTROLS BAR ── */
+#controls{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:12px 20px;
+  background:linear-gradient(90deg,#0a0c10,#111520,#0a0c10);
+  border-top:1px solid var(--brand);
+  flex-shrink:0;
+}
+
+.ctrl-btn{
+  background:var(--btn-bg);
+  border:1px solid var(--btn-border);
+  color:#4a6070;
+  font-family:'VT323', monospace;
+  font-size:16px;
+  padding:6px 14px;
+  cursor:pointer;
+  border-radius:3px;
+  letter-spacing:1px;
+  transition:all 0.15s;
+}
+
+.ctrl-btn:hover{
+  border-color:var(--cyan);
+  color:var(--cyan);
+}
+
+#power-btn{
+  font-size:18px;
+  color:var(--green);
+  border-color:var(--green);
+  text-shadow:0 0 8px rgba(0,255,136,0.5);
+  box-shadow:0 0 10px rgba(0,255,136,0.1);
+}
+
+#power-btn.off{
+  color:#ff4444;
+  border-color:#ff4444;
+  text-shadow:0 0 8px rgba(255,68,68,0.5);
+  box-shadow:0 0 10px rgba(255,68,68,0.1);
+}
+
+#back-btn{
+  display:none;
+}
+
+/* Off screen */
+#off-screen{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9000;
+  flex-direction:column;
+  gap:10px;
+}
+
+#off-screen.show{
+  display:flex;
+}
+
+.off-dot{
+  width:4px;
+  height:4px;
+  background:#fff;
+  border-radius:50%;
+  opacity:0.3;
+  animation:flicker 0.1s ease-out forwards;
+}
+
+@keyframes flicker{
+  0%{opacity:1;transform:scale(3);}
+  100%{opacity:0;transform:scale(0);}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SINISTER <span>HOME</span></div>
+  <div class="weather" id="weather">
+    <span class="wx-icon" id="wx-icon">◌</span>
+    <span class="wx-temp" id="wx-temp">--°</span>
+    <span class="wx-loc" id="wx-loc">LOCATING…</span>
+  </div>
+  <div class="clock" id="clock">00:00:00</div>
+</header>
+
+<main>
+  <div id="screen-area">
+    <div id="home-screen">
+      <div class="home-title">⬡ SINISTER MEDIA CENTER ⬡</div>
+      <div class="home-subtitle">SELECT AN APP TO BEGIN</div>
+            <div class="section-header">⬡ SINISTER ORIGINALS</div>
+      <div class="app-grid">
+
+        <div class="app-tile sinister-tv" onclick="launchApp('Sinister TV','sinister-tv')">
+          <div class="app-icon">📺</div>
+          <div class="app-name">SINISTER TV</div>
+          <div class="app-desc">Live Channels</div>
+        </div>
+
+        <div class="app-tile" onclick="launchApp('Dead Archive Radio','radio')">
+          <div class="app-icon">📻</div>
+          <div class="app-name">RADIO</div>
+          <div class="app-desc">73 Stations</div>
+        </div>
+
+        <div class="app-tile" onclick="launchApp('Arcade','arcade')">
+          <div class="app-icon">🕹️</div>
+          <div class="app-name">ARCADE</div>
+          <div class="app-desc">Classic Games</div>
+        </div>
+
+      </div>
+
+      <div class="section-header">📺 LIVE TV</div>
+      <div class="app-grid">
+
+        <div class="app-tile pluto" onclick="launchUrl('Pluto TV','https://pluto.tv/us/live-tv/673247127d5da5000817b4d6')">
+          <div class="app-icon">🪐</div>
+          <div class="app-name">PLUTO TV</div>
+          <div class="app-desc">Free Live TV</div>
+        </div>
+
+        <div class="app-tile tubi" onclick="launchUrl('Tubi','https://tubitv.com/live')">
+          <div class="app-icon">🎬</div>
+          <div class="app-name">TUBI</div>
+          <div class="app-desc">Free Movies</div>
+        </div>
+
+        <div class="app-tile roku" onclick="launchUrl('Roku Channel','https://therokuchannel.roku.com')">
+          <div class="app-icon">🎞️</div>
+          <div class="app-name">ROKU</div>
+          <div class="app-desc">Free Movies &amp; TV</div>
+        </div>
+
+        <div class="app-tile localnow" onclick="launchUrl('Local Now','https://localnow.com/channels/epg-local-now-nyc')">
+          <div class="app-icon">🗞️</div>
+          <div class="app-name">LOCAL NOW</div>
+          <div class="app-desc">NYC News &amp; Live</div>
+        </div>
+
+      </div>
+
+      <div class="section-header">🎬 MOVIES & SHOWS</div>
+      <div class="app-grid">
+
+        <div class="app-tile popcornflix" onclick="launchUrl('Popcornflix','https://popcornflix.com/search')">
+          <div class="app-icon">🍿</div>
+          <div class="app-name">POPCORNFLIX</div>
+          <div class="app-desc">Free Movies</div>
+        </div>
+
+        <div class="app-tile plex" onclick="launchUrl('Plex','https://watch.plex.tv/')">
+          <div class="app-icon">🎬</div>
+          <div class="app-name">PLEX</div>
+          <div class="app-desc">50K+ Movies</div>
+        </div>
+
+        <div class="app-tile rakuten" onclick="launchUrl('Rakuten TV','https://rakuten.tv/')">
+          <div class="app-icon">🎥</div>
+          <div class="app-name">RAKUTEN TV</div>
+          <div class="app-desc">Free Films</div>
+        </div>
+
+        <div class="app-tile fawesome" onclick="launchUrl('Fawesome','https://fawesome.tv/')">
+          <div class="app-icon">😎</div>
+          <div class="app-name">FAWESOME</div>
+          <div class="app-desc">Cult &amp; Niche</div>
+        </div>
+
+        <div class="app-tile arte" onclick="launchUrl('ARTE.tv','https://www.arte.tv/en/')">
+          <div class="app-icon">🎭</div>
+          <div class="app-name">ARTE.TV</div>
+          <div class="app-desc">Arthouse &amp; Docs</div>
+        </div>
+
+        <div class="app-tile pbs" onclick="launchUrl('PBS','https://www.pbs.org/')">
+          <div class="app-icon">📖</div>
+          <div class="app-name">PBS</div>
+          <div class="app-desc">Documentaries</div>
+        </div>
+
+      </div>
+
+      <div class="section-header">🎵 MUSIC & VIDEO</div>
+      <div class="app-grid">
+
+        <div class="app-tile youtube" onclick="launchUrl('YouTube','https://www.youtube.com/watch?v=7nnSn66ZUuE&list=PLDHrBEjkLAMUGN-TFSM71t-0RM8wzKxH7')">
+          <div class="app-icon">▶️</div>
+          <div class="app-name">YOUTUBE</div>
+          <div class="app-desc">Video Streaming</div>
+        </div>
+
+        <div class="app-tile twitch" onclick="launchUrl('Twitch','https://www.twitch.tv')">
+          <div class="app-icon">🎮</div>
+          <div class="app-name">TWITCH</div>
+          <div class="app-desc">Live Streams</div>
+        </div>
+
+        <div class="app-tile spotify" onclick="launchUrl('Spotify','https://open.spotify.com')">
+          <div class="app-icon">🎵</div>
+          <div class="app-name">SPOTIFY</div>
+          <div class="app-desc">Music</div>
+        </div>
+
+      </div>
+
+      <div class="section-header">🕹️ GAMES</div>
+      <div class="app-grid">
+
+        <div class="app-tile oldgames" onclick="launchUrl('Retro Games','https://oldgames.games/')">
+          <div class="app-icon">🎮</div>
+          <div class="app-name">RETRO GAMES</div>
+          <div class="app-desc">SNES · N64 · PS1</div>
+        </div>
+
+        <div class="app-tile playbrain" onclick="launchUrl('PlayBrain','https://playbrain.games/')">
+          <div class="app-icon">🧩</div>
+          <div class="app-name">PLAYBRAIN</div>
+          <div class="app-desc">Puzzles &amp; Classics</div>
+        </div>
+
+        <div class="app-tile newgrounds" onclick="launchUrl('Newgrounds','https://www.newgrounds.com/games')">
+          <div class="app-icon">🅝</div>
+          <div class="app-name">NEWGROUNDS</div>
+          <div class="app-desc">Indie Classics</div>
+        </div>
+
+        <div class="app-tile coolmath" onclick="launchUrl('Coolmath Games','https://www.coolmathgames.com/')">
+          <div class="app-icon">🔢</div>
+          <div class="app-name">COOLMATH</div>
+          <div class="app-desc">Slope · Run 3</div>
+        </div>
+
+        <div class="app-tile itch" onclick="launchUrl('itch.io','https://itch.io/games/platform-web')">
+          <div class="app-icon">🎨</div>
+          <div class="app-name">ITCH.IO</div>
+          <div class="app-desc">Indie Web Games</div>
+        </div>
+
+        <div class="app-tile lichess" onclick="launchUrl('Lichess','https://lichess.org/')">
+          <div class="app-icon">♟️</div>
+          <div class="app-name">LICHESS</div>
+          <div class="app-desc">Free Chess</div>
+        </div>
+
+        <div class="app-tile agar" onclick="launchUrl('Agar.io','https://agar.io/')">
+          <div class="app-icon">🔴</div>
+          <div class="app-name">AGAR.IO</div>
+          <div class="app-desc">Cell Eater</div>
+        </div>
+
+        <div class="app-tile skribbl" onclick="launchUrl('Skribbl.io','https://skribbl.io/')">
+          <div class="app-icon">✏️</div>
+          <div class="app-name">SKRIBBL.IO</div>
+          <div class="app-desc">Draw &amp; Guess</div>
+        </div>
+
+        <div class="app-tile cookieclicker" onclick="launchUrl('Cookie Clicker','https://orteil.dashnet.org/cookieclicker/')">
+          <div class="app-icon">🍪</div>
+          <div class="app-name">COOKIE CLICKER</div>
+          <div class="app-desc">Idle Original</div>
+        </div>
+
+        <div class="app-tile eightball" onclick="launchUrl('8 Ball Pool','https://8ballpool.com/game')">
+          <div class="app-icon">🎱</div>
+          <div class="app-name">8 BALL POOL</div>
+          <div class="app-desc">World #1 Pool</div>
+        </div>
+
+        <div class="app-tile slither" onclick="launchUrl('Slither.io','https://slither.io/')">
+          <div class="app-icon">🐍</div>
+          <div class="app-name">SLITHER.IO</div>
+          <div class="app-desc">Snake Battle</div>
+        </div>
+
+        <div class="app-tile shellshock" onclick="launchUrl('Shell Shockers','https://shellshock.io/')">
+          <div class="app-icon">🥚</div>
+          <div class="app-name">SHELL SHOCKERS</div>
+          <div class="app-desc">Egg FPS</div>
+        </div>
+
+        <div class="app-tile merczone" onclick="launchUrl('Merc Zone','https://merczone.com/')">
+          <div class="app-icon">🎖️</div>
+          <div class="app-name">MERC ZONE</div>
+          <div class="app-desc">Fast FPS</div>
+        </div>
+
+        <div class="app-tile deadshot" onclick="launchUrl('Deadshot.io','https://deadshot.io/')">
+          <div class="app-icon">🎯</div>
+          <div class="app-name">DEADSHOT.IO</div>
+          <div class="app-desc">Skill FPS</div>
+        </div>
+
+        <div class="app-tile venge" onclick="launchUrl('Venge.io','https://venge.io/')">
+          <div class="app-icon">⚡</div>
+          <div class="app-name">VENGE.IO</div>
+          <div class="app-desc">Hero Shooter</div>
+        </div>
+
+        <div class="app-tile zombs" onclick="launchUrl('ZombsRoyale.io','https://zombsroyale.io/')">
+          <div class="app-icon">🪂</div>
+          <div class="app-name">ZOMBS ROYALE</div>
+          <div class="app-desc">Battle Royale</div>
+        </div>
+
+        <div class="app-tile krunker" onclick="launchUrl('Krunker.io','https://krunker.io/')">
+          <div class="app-icon">🔫</div>
+          <div class="app-name">KRUNKER.IO</div>
+          <div class="app-desc">Browser FPS</div>
+        </div>
+
+      </div>
+
+    </div>
+    <!-- iframes load here -->
+  </div>
+
+  <div id="now-playing">
+    <div class="np-label">NOW OPEN</div>
+    <div id="np-app">HOME SCREEN</div>
+    <div class="np-label" id="status">READY</div>
+  </div>
+</main>
+
+<div id="controls">
+  <span class="np-label">USE THE TV'S POWER &amp; HOME BUTTONS TO NAVIGATE</span>
+</div>
+
+<div id="off-screen">
+  <div class="off-dot"></div>
+</div>
+
+<script>
+// ── Clock ──
+function updateClock(){
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = h+':'+m+':'+s;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Weather widget (IP-based location + Open-Meteo, both free/no-key/no-signup) ──
+function wxIcon(code){
+  // WMO weather codes → emoji
+  if(code===0) return '☀️';
+  if(code>=1 && code<=2) return '⛅';
+  if(code===3) return '☁️';
+  if(code>=45 && code<=48) return '🌫️';
+  if(code>=51 && code<=67) return '🌧️';
+  if(code>=71 && code<=77) return '❄️';
+  if(code>=80 && code<=82) return '🌦️';
+  if(code>=85 && code<=86) return '🌨️';
+  if(code>=95) return '⛈️';
+  return '🌡️';
+}
+
+async function loadWeather(){
+  try{
+    // 1) IP-based geolocation (no permission prompt, works in SL)
+    const geoRes = await fetch('https://ipapi.co/json/');
+    const geo = await geoRes.json();
+    const lat = geo.latitude, lon = geo.longitude;
+    const city = geo.city || geo.region || '';
+    const isUS = geo.country_code === 'US';
+    const unit = isUS ? 'fahrenheit' : 'celsius';
+    const unitSym = isUS ? '°F' : '°C';
+
+    if(lat == null || lon == null) throw new Error('no coords');
+
+    // 2) Weather from Open-Meteo (no API key)
+    const wxRes = await fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+
+      '&current=temperature_2m,weather_code&temperature_unit='+unit
+    );
+    const wx = await wxRes.json();
+    const temp = Math.round(wx.current.temperature_2m);
+    const code = wx.current.weather_code;
+
+    document.getElementById('wx-icon').textContent = wxIcon(code);
+    document.getElementById('wx-temp').textContent = temp + unitSym;
+    document.getElementById('wx-loc').textContent = city || 'LOCAL';
+  }catch(e){
+    document.getElementById('wx-icon').textContent = '🌡️';
+    document.getElementById('wx-temp').textContent = '--°';
+    document.getElementById('wx-loc').textContent = 'N/A';
+  }
+}
+loadWeather();
+// Refresh weather every 15 minutes
+setInterval(loadWeather, 15*60*1000);
+
+// ── State ──
+let tvOff = false;
+let currentApp = 'HOME SCREEN';
+let popupWindow = null;
+
+// ── App URLs - update these to point to your hosted files ──
+const APP_URLS = {
+  'sinister-tv': 'https://sinisterraz.github.io/index.html/',
+  'radio': 'https://sinisterraz.github.io/SinisterRadio/',
+  'arcade': 'https://sinisterraz.github.io/SinisterArcadeArch/',
+};
+
+// ── Launch internal app ──
+function launchApp(name, key){
+  if(tvOff) return;
+  const url = APP_URLS[key];
+  if(!url){ alert('App not connected yet — update APP_URLS with your hosted URL.'); return; }
+  // Navigate the whole prim to the app (SL-compatible). HOME button returns here.
+  window.location.href = url;
+}
+
+// ── Launch external URL in popup window ──
+function launchUrl(name, url){
+  if(tvOff) return;
+  // Navigate the ENTIRE prim to the app URL (top-level, not nested iframe).
+  // This works in Second Life media-on-prim exactly like setting the prim URL by hand,
+  // so sites like YouTube that block iframes still load fine.
+  // The physical HOME button on the TV returns to this launcher.
+  window.location.href = url;
+}
+
+// ── Open URL in screen area ──
+function openInScreen(name, url){
+  currentApp = name;
+  document.getElementById('np-app').textContent = name.toUpperCase();
+  document.getElementById('status').textContent = 'LOADING...';
+
+  // Hide home screen
+  document.getElementById('home-screen').style.display = 'none';
+
+  // Stop existing iframe audio before removing
+  const existing = document.getElementById('app-frame');
+  if(existing){
+    try{ existing.contentWindow.postMessage('pause','*'); }catch(e){}
+    existing.src = 'about:blank';
+    existing.remove();
+  }
+
+  // Create iframe
+  const fr = document.createElement('iframe');
+  fr.id = 'app-frame';
+  fr.src = url;
+  fr.allow = 'autoplay; encrypted-media; fullscreen';
+  fr.allowFullscreen = true;
+  fr.onload = () => { document.getElementById('status').textContent = 'LIVE'; };
+  document.getElementById('screen-area').appendChild(fr);
+
+  // Show back button
+  document.getElementById('back-btn').style.display = 'inline-block';
+}
+
+// ── Go home ──
+function goHome(){
+  currentApp = 'HOME SCREEN';
+  document.getElementById('np-app').textContent = 'HOME SCREEN';
+  document.getElementById('status').textContent = 'READY';
+
+  // Close popup window if open
+  if(popupWindow && !popupWindow.closed) popupWindow.close();
+  popupWindow = null;
+
+  // Stop iframe audio then remove
+  const fr = document.getElementById('app-frame');
+  if(fr){
+    try{ fr.contentWindow.postMessage('pause','*'); }catch(e){}
+    fr.src = 'about:blank';
+    fr.remove();
+  }
+
+  // Show home screen
+  document.getElementById('home-screen').style.display = 'flex';
+  document.getElementById('back-btn').style.display = 'none';
+}
+
+// ── Power ──
+function togglePower(){
+  tvOff = !tvOff;
+  const btn = document.getElementById('power-btn');
+  const off = document.getElementById('off-screen');
+  const dot = document.querySelector('.off-dot');
+
+  if(tvOff){
+    // Kill any running app audio immediately
+    if(popupWindow && !popupWindow.closed){ popupWindow.close(); popupWindow = null; }
+    const fr = document.getElementById('app-frame');
+    if(fr){
+      try{ fr.contentWindow.postMessage('pause','*'); }catch(e){}
+      fr.src = 'about:blank';
+    }
+    btn.textContent = '⏻ POWER';
+    btn.classList.add('off');
+    dot.style.animation = 'none';
+    dot.offsetHeight;
+    dot.style.animation = '';
+    off.classList.add('show');
+  } else {
+    btn.classList.remove('off');
+    off.classList.remove('show');
+  }
+}
+</script>
+</body>
+</html>
