@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SINISTER HOME</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Orbitron:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Orbitron:wght@700;900&display=swap');
 
 *{box-sizing:border-box;margin:0;padding:0;}
 
 :root{
-  --bg:#080b0f;
+  --bg:#06080b;
   --frame:#0d0f14;
   --brand:#1a2030;
   --logo:#c8a84a;
@@ -18,789 +18,402 @@
   --cyan:#00e5ff;
   --green:#00ff88;
   --yellow:#ffcc00;
-  --scanline:rgba(0,0,0,0.12);
-  --vignette:rgba(0,0,0,0.7);
-  --btn-bg:linear-gradient(145deg,#151a22,#0d1018);
-  --btn-border:#1a2030;
+  --purple:#9146ff;
 }
 
+html,body{height:100%;}
 body{
   background:var(--bg);
   color:#fff;
   font-family:'VT323', monospace;
-  min-height:100vh;
   display:flex;
   flex-direction:column;
   overflow:hidden;
+  position:relative;
 }
 
-/* CRT scanlines overlay */
+/* ══════════════ DEPTH BACKGROUND LAYERS ══════════════ */
+.bg-layer{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+
+/* Layer 1 — slow cyan aurora */
+.bg-aurora{
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 25%, rgba(0,229,255,0.10), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 70%, rgba(145,70,255,0.08), transparent 60%);
+  animation:auroraDrift 40s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift{
+  0%{ transform:translate(0,0) scale(1); }
+  100%{ transform:translate(-4%,3%) scale(1.15); }
+}
+
+/* Layer 2 — gold fog */
+.bg-fog{
+  background:radial-gradient(ellipse 70% 60% at 50% 90%, rgba(200,168,74,0.06), transparent 65%);
+  animation:fogPulse 25s ease-in-out infinite alternate;
+}
+@keyframes fogPulse{
+  0%{ opacity:0.6; }
+  100%{ opacity:1; }
+}
+
+/* Layer 3 — perspective wireframe grid */
+.bg-grid{
+  background-image:
+    linear-gradient(rgba(0,229,255,0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.5) 1px, transparent 1px);
+  background-size:44px 44px;
+  opacity:0.03;
+  transform:perspective(400px) rotateX(58deg) scale(2.2);
+  transform-origin:center 75%;
+  animation:gridScroll 8s linear infinite;
+}
+@keyframes gridScroll{
+  0%{ background-position:0 0; }
+  100%{ background-position:0 44px; }
+}
+
+/* ══════════════ CRT OVERLAYS ══════════════ */
+/* Scanlines + chromatic shimmer */
 body::before{
   content:'';
-  position:fixed;
-  inset:0;
-  background:repeating-linear-gradient(
-    0deg,
-    var(--scanline) 0px,
-    var(--scanline) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  pointer-events:none;
-  z-index:9999;
+  position:fixed; inset:0; z-index:9990; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0px, rgba(0,0,0,0.14) 1px, transparent 1px, transparent 3px);
+  animation:crtShimmer 14s steps(1) infinite;
 }
-
-/* Vignette */
+@keyframes crtShimmer{
+  0%,96%{ opacity:1; }
+  97%{ opacity:0.7; transform:translateX(0.5px); }
+  98%{ opacity:1; transform:translateX(-0.5px); }
+  100%{ opacity:1; transform:translateX(0); }
+}
+/* Vignette + barrel edge darkening */
 body::after{
   content:'';
-  position:fixed;
-  inset:0;
-  background:radial-gradient(ellipse at center, transparent 50%, var(--vignette) 100%);
-  pointer-events:none;
-  z-index:9998;
+  position:fixed; inset:0; z-index:9991; pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 48%, rgba(0,0,0,0.75) 100%);
+  box-shadow:inset 0 0 60px rgba(0,0,0,0.6), inset 0 0 140px rgba(0,229,255,0.04);
+}
+/* Noise flash */
+#noise{
+  position:fixed; inset:0; z-index:9989; pointer-events:none; opacity:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  animation:noiseFlash 20s steps(1) infinite;
+}
+@keyframes noiseFlash{
+  0%,98%{ opacity:0; }
+  99%{ opacity:0.025; }
+  100%{ opacity:0; }
 }
 
-/* ── HEADER ── */
+/* ══════════════ CRT BOOT SEQUENCE ══════════════ */
+#boot{
+  position:fixed; inset:0; z-index:99999; background:#000;
+  display:flex; align-items:center; justify-content:center;
+}
+#boot .crt-line{
+  width:0; height:2px; background:#fff;
+  box-shadow:0 0 20px #fff, 0 0 40px var(--cyan);
+  animation:bootLine 1.2s ease-out forwards;
+}
+@keyframes bootLine{
+  0%{ width:0; height:2px; opacity:0; }
+  12%{ width:70%; height:2px; opacity:1; }
+  30%{ width:100%; height:2px; }
+  45%{ width:100%; height:100%; opacity:1; }
+  55%{ opacity:0.85; filter:brightness(2.2); }
+  60%{ opacity:1; filter:brightness(1); transform:translateX(2px); }
+  63%{ transform:translateX(-3px); }
+  66%{ transform:translateX(0); }
+  100%{ width:100%; height:100%; opacity:0; }
+}
+body.booted #boot{ display:none; }
+body:not(.booted) #app-shell{ opacity:0; }
+#app-shell{ animation:shellIn 0.6s ease-out 1.0s both; }
+@keyframes shellIn{ from{opacity:0;} to{opacity:1;} }
+
+/* ══════════════ HEADER ══════════════ */
 header{
-  background:linear-gradient(90deg,#0a0c10,#111520,#0a0c10);
+  position:relative; z-index:10;
+  background:linear-gradient(90deg, rgba(8,10,16,0.9), rgba(17,21,32,0.9), rgba(8,10,16,0.9));
   border-bottom:1px solid var(--brand);
-  padding:10px 20px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+  padding:12px 24px;
+  display:flex; align-items:center; justify-content:space-between;
   flex-shrink:0;
+  box-shadow:0 2px 20px rgba(0,0,0,0.5);
 }
-
 .logo{
   font-family:'Press Start 2P', monospace;
-  font-size:14px;
-  color:var(--logo);
-  text-shadow:0 0 10px var(--logo-glow);
+  font-size:15px; color:var(--logo);
+  text-shadow:0 0 12px var(--logo-glow), 0 0 24px var(--logo-glow);
   letter-spacing:2px;
 }
+.logo span{ color:var(--cyan); text-shadow:0 0 12px rgba(0,229,255,0.6); }
 
-.logo span{
-  color:var(--cyan);
-  text-shadow:0 0 10px rgba(0,229,255,0.6);
-}
+.header-right{ display:flex; align-items:center; gap:16px; }
 
-.clock{
-  font-family:'VT323', monospace;
-  font-size:22px;
-  color:var(--cyan);
-  text-shadow:0 0 8px rgba(0,229,255,0.5);
-  letter-spacing:2px;
-}
-
-/* Weather widget */
+/* Weather pill */
 .weather{
-  display:flex;
-  align-items:center;
-  gap:8px;
+  display:flex; align-items:center; gap:9px;
   font-family:'VT323', monospace;
-  padding:4px 14px;
-  border:1px solid var(--brand);
-  border-radius:20px;
-  background:rgba(13,16,24,0.5);
+  padding:5px 15px;
+  border:1px solid var(--brand); border-radius:22px;
+  background:linear-gradient(145deg, rgba(20,26,38,0.6), rgba(13,16,24,0.6));
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
 }
-.wx-icon{
-  font-size:20px;
-  line-height:1;
-}
-.wx-temp{
-  font-size:22px;
-  color:var(--logo);
-  text-shadow:0 0 8px var(--logo-glow);
-  letter-spacing:1px;
-}
-.wx-loc{
-  font-size:15px;
-  color:#5a7080;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  max-width:120px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-@media (max-width:600px){
-  .wx-loc{ display:none; }
-}
+.wx-icon{ font-size:22px; line-height:1; filter:drop-shadow(0 0 6px rgba(200,168,74,0.5)); }
+.wx-stack{ display:flex; flex-direction:column; line-height:1; }
+.wx-temp{ font-size:24px; color:var(--logo); text-shadow:0 0 8px var(--logo-glow); letter-spacing:1px; }
+.wx-loc{ font-size:13px; color:#5a7080; letter-spacing:1px; text-transform:uppercase; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-/* ── MAIN CONTENT ── */
-main{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  padding:20px;
-  overflow:hidden;
-}
+/* Clock */
+.clock-wrap{ display:flex; flex-direction:column; align-items:flex-end; line-height:1; }
+.clock{ font-family:'Orbitron', monospace; font-weight:700; font-size:24px; color:var(--cyan); text-shadow:0 0 10px rgba(0,229,255,0.5); letter-spacing:2px; }
+.clock-day{ font-family:'VT323', monospace; font-size:14px; color:#5a7080; letter-spacing:3px; text-transform:uppercase; }
 
-/* Screen area - where apps open */
+@media (max-width:620px){ .wx-loc, .clock-day{ display:none; } .logo{ font-size:12px; } }
+
+/* ══════════════ MAIN ══════════════ */
+main{ position:relative; z-index:10; flex:1; display:flex; flex-direction:column; padding:16px 20px 12px; overflow:hidden; }
+
 #screen-area{
-  flex:1;
-  background:#000;
-  border:2px solid var(--brand);
-  border-radius:4px;
-  position:relative;
-  overflow:hidden;
-  margin-bottom:16px;
-  min-height:0;
+  flex:1; background:#000; border:2px solid var(--brand); border-radius:6px;
+  position:relative; overflow:hidden; margin-bottom:12px; min-height:0;
+  box-shadow:0 0 0 1px rgba(0,229,255,0.08), 0 0 30px rgba(0,229,255,0.06), inset 0 0 40px rgba(0,0,0,0.6);
 }
+#screen-area iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
 
-#screen-area iframe{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  border:none;
-}
-
-/* Home screen inside the screen area */
+/* Home screen scroll container */
 #home-screen{
-  position:absolute;
-  inset:0;
-  background:var(--bg);
-  background-image:
-    radial-gradient(circle at 15% 20%, rgba(0,229,255,0.06), transparent 35%),
-    radial-gradient(circle at 85% 60%, rgba(200,168,74,0.05), transparent 40%),
-    radial-gradient(circle at 50% 100%, rgba(145,70,255,0.05), transparent 45%);
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  justify-content:flex-start;
-  padding:24px 28px 50px 28px;
-  overflow-y:auto;
-  overflow-x:hidden;
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  padding:22px 26px 46px;
+  overflow-y:auto; overflow-x:hidden;
 }
+#home-screen::-webkit-scrollbar{ width:10px; }
+#home-screen::-webkit-scrollbar-track{ background:#0a0c10; }
+#home-screen::-webkit-scrollbar-thumb{ background:var(--brand); border-radius:5px; }
+#home-screen::-webkit-scrollbar-thumb:hover{ background:var(--cyan); }
 
-/* Retro scrollbar styling */
-#home-screen::-webkit-scrollbar{
-  width:10px;
+/* ══════════════ HERO BANNER ══════════════ */
+#hero{
+  position:relative; width:100%; min-height:150px;
+  border:1px solid var(--brand); border-radius:12px; overflow:hidden;
+  margin-bottom:26px; cursor:pointer;
+  background:linear-gradient(135deg, #0a0e18, #10131f);
+  display:flex; align-items:center;
+  box-shadow:0 8px 40px rgba(0,0,0,0.5), inset 0 0 60px rgba(0,229,255,0.03);
 }
-#home-screen::-webkit-scrollbar-track{
-  background:#0a0c10;
+#hero::before{
+  content:''; position:absolute; inset:0;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,0.25) 0px, rgba(0,0,0,0.25) 2px, transparent 2px, transparent 4px);
+  opacity:0.4; pointer-events:none;
+  animation:heroStatic 0.4s steps(3) infinite;
 }
-#home-screen::-webkit-scrollbar-thumb{
-  background:var(--brand);
-  border-radius:5px;
+@keyframes heroStatic{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(1px);} }
+.hero-glow{
+  position:absolute; inset:0; opacity:0.5;
+  background:radial-gradient(ellipse 60% 100% at 15% 50%, rgba(0,229,255,0.18), transparent 70%);
+  transition:background 0.8s ease;
 }
-#home-screen::-webkit-scrollbar-thumb:hover{
-  background:var(--cyan);
+.hero-content{ position:relative; z-index:2; padding:26px 34px; }
+.hero-tag{ font-family:'VT323',monospace; font-size:16px; letter-spacing:4px; color:var(--cyan); text-transform:uppercase; margin-bottom:6px; text-shadow:0 0 8px rgba(0,229,255,0.5); }
+.hero-title{ font-family:'Press Start 2P',monospace; font-size:22px; color:#fff; text-shadow:0 0 18px var(--logo-glow); letter-spacing:1px; margin-bottom:10px; line-height:1.3; }
+.hero-sub{ font-family:'VT323',monospace; font-size:18px; color:#8a9aa8; letter-spacing:1px; margin-bottom:16px; }
+.hero-btn{
+  display:inline-block; font-family:'VT323',monospace; font-size:18px; letter-spacing:2px;
+  color:var(--logo); border:1px solid var(--logo); border-radius:4px; padding:6px 20px;
+  text-transform:uppercase; transition:all 0.2s; text-shadow:0 0 6px var(--logo-glow);
 }
+#hero:hover .hero-btn{ background:var(--logo); color:#000; box-shadow:0 0 20px var(--logo-glow); }
+.hero-logo{
+  position:absolute; right:6%; top:50%; transform:translateY(-50%);
+  width:130px; height:130px; z-index:2; opacity:0.95;
+  display:flex; align-items:center; justify-content:center;
+  animation:heroLogoFloat 5s ease-in-out infinite;
+}
+.hero-logo img{ max-width:100%; max-height:100%; object-fit:contain; filter:drop-shadow(0 0 16px rgba(0,0,0,0.6)); }
+@keyframes heroLogoFloat{ 0%,100%{transform:translateY(-50%) scale(1);} 50%{transform:translateY(-54%) scale(1.04);} }
+@media (max-width:620px){ .hero-logo{ display:none; } }
 
-.home-title{
-  font-family:'Press Start 2P', monospace;
-  font-size:11px;
-  color:var(--logo);
-  text-shadow:0 0 15px var(--logo-glow);
-  letter-spacing:3px;
-  margin-bottom:8px;
-  text-align:center;
+/* ══════════════ SECTION HEADERS ══════════════ */
+.section-header{
+  position:relative; width:100%;
+  font-family:'Press Start 2P', monospace; font-size:11px;
+  color:var(--logo); letter-spacing:2px;
+  margin:6px 0 16px; padding:0 0 12px 6px; text-align:left;
+  text-shadow:0 0 12px var(--logo-glow);
 }
-
-.home-subtitle{
-  font-family:'VT323', monospace;
-  font-size:20px;
-  color:#4a6070;
-  letter-spacing:4px;
-  margin-bottom:20px;
-  text-align:center;
+.section-header::before{ content:'◉ '; color:var(--cyan); text-shadow:0 0 8px rgba(0,229,255,0.6); }
+.section-header::after{
+  content:''; position:absolute; left:0; bottom:0; height:2px; width:100%;
+  background:linear-gradient(90deg, var(--logo), var(--cyan), transparent 85%);
+  background-size:200% 100%;
+  box-shadow:0 0 8px var(--logo-glow);
+  animation:lineSweep 6s linear infinite;
 }
+@keyframes lineSweep{ 0%{background-position:200% 0;} 100%{background-position:-100% 0;} }
+.section-header:not(:first-of-type){ margin-top:34px; }
 
-/* App grid */
+/* ══════════════ TILE GRID ══════════════ */
 .app-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
-  gap:18px;
-  width:100%;
-  padding:10px 4px 24px 4px;
-}
-
-/* Section headers - neon signage style */
-.section-header{
-  width:100%;
-  font-family:'Press Start 2P', monospace;
-  font-size:11px;
-  color:var(--logo);
-  letter-spacing:2px;
-  margin:30px 0 6px 0;
-  padding:0 0 10px 4px;
-  text-align:left;
-  position:relative;
-  text-shadow:0 0 12px var(--logo-glow), 0 0 24px var(--logo-glow);
-  animation:headerGlow 3s ease-in-out infinite;
-}
-.section-header::after{
-  content:'';
-  position:absolute;
-  left:0; bottom:0;
-  width:100%;
-  height:2px;
-  background:linear-gradient(90deg, var(--logo), transparent 80%);
-  box-shadow:0 0 8px var(--logo-glow);
-}
-.section-header:first-of-type{
-  margin-top:0;
-}
-@keyframes headerGlow{
-  0%,100%{ opacity:0.85; }
-  50%{ opacity:1; }
+  gap:18px; width:100%; padding:4px 4px 8px;
 }
 
 .app-tile{
-  background:linear-gradient(145deg, rgba(26,32,48,0.55), rgba(13,16,24,0.55));
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.06);
-  border-radius:14px;
-  padding:24px 14px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:12px;
-  cursor:pointer;
-  transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s, border-color 0.25s;
-  position:relative;
-  overflow:hidden;
-  min-height:150px;
+  --accent:#00e5ff;
+  position:relative; min-height:150px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
+  padding:22px 14px; cursor:pointer; overflow:hidden;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.07);
+  background:linear-gradient(155deg, rgba(30,36,52,0.55), rgba(10,13,20,0.6));
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  transition:transform 0.32s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.32s, border-color 0.32s;
   animation:tileFloat 6s ease-in-out infinite;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -12px 24px rgba(0,0,0,0.3), 0 6px 18px rgba(0,0,0,0.35);
 }
+.app-tile:nth-child(4n){ animation-delay:-1.5s; }
+.app-tile:nth-child(4n+1){ animation-delay:-3s; }
+.app-tile:nth-child(4n+2){ animation-delay:-4.5s; }
+@keyframes tileFloat{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
 
-/* Stagger the float so tiles don't all bob in sync */
-.app-tile:nth-child(3n){ animation-delay:-2s; }
-.app-tile:nth-child(3n+1){ animation-delay:-4s; }
-
-@keyframes tileFloat{
-  0%,100%{ transform:translateY(0); }
-  50%{ transform:translateY(-4px); }
-}
-
-/* Animated shimmer sweep across the glass */
+/* Top glass highlight */
 .app-tile::before{
-  content:'';
-  position:absolute;
-  top:0; left:-120%;
-  width:80%; height:100%;
-  background:linear-gradient(105deg, transparent, rgba(255,255,255,0.08), transparent);
-  transform:skewX(-20deg);
-  transition:left 0.6s ease;
-}
-.app-tile:hover::before{
-  left:120%;
-}
-
-/* Glowing gradient ring on the inside */
-.app-tile::after{
-  content:'';
-  position:absolute;
-  inset:0;
-  border-radius:14px;
-  padding:1px;
-  background:linear-gradient(135deg, transparent, transparent);
-  opacity:0;
-  transition:opacity 0.25s;
+  content:''; position:absolute; top:0; left:0; right:0; height:45%;
+  background:linear-gradient(180deg, rgba(255,255,255,0.08), transparent);
   pointer-events:none;
 }
+/* Moving sheen */
+.app-tile .sheen{
+  position:absolute; top:0; left:-130%; width:70%; height:100%;
+  background:linear-gradient(105deg, transparent, rgba(255,255,255,0.10), transparent);
+  transform:skewX(-20deg); transition:left 0.6s ease; pointer-events:none;
+}
+.app-tile:hover .sheen{ left:130%; }
 
 .app-tile:hover{
-  transform:translateY(-8px) scale(1.04);
-  border-color:var(--cyan);
-  box-shadow:0 12px 40px rgba(0,229,255,0.25), inset 0 0 20px rgba(0,229,255,0.05);
-  animation-play-state:paused;
-  z-index:5;
+  transform:translateY(-8px) scale(1.05);
+  border-color:var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 14px 44px rgba(0,0,0,0.5),
+    0 0 26px var(--accent),
+    0 0 60px color-mix(in srgb, var(--accent) 35%, transparent);
+  animation-play-state:paused; z-index:5;
 }
+.app-tile:active{ transform:translateY(-3px) scale(1.01); }
 
-.app-tile:active{
-  transform:translateY(-4px) scale(1.01);
+/* Launch pulse */
+.app-tile.launching{
+  animation:launchPulse 0.18s ease-out forwards;
+}
+@keyframes launchPulse{
+  0%{ transform:scale(1.05); }
+  60%{ transform:scale(1.14); box-shadow:0 0 60px var(--accent), 0 0 120px var(--accent); filter:brightness(1.6); }
+  100%{ transform:scale(1.3); opacity:0.4; filter:brightness(2.4); }
 }
 
 .app-icon{
-  font-size:42px;
-  line-height:1;
-  filter:drop-shadow(0 0 8px rgba(0,229,255,0.3));
-  transition:transform 0.25s;
+  font-size:44px; line-height:1;
+  filter:drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 60%, transparent));
+  transition:transform 0.3s;
 }
-.app-tile:hover .app-icon{
-  transform:scale(1.15);
+.app-tile:hover .app-icon{ transform:scale(1.16) translateY(-2px); }
+
+.app-logo{
+  width:78px; height:78px; display:flex; align-items:center; justify-content:center;
+  transition:transform 0.3s;
+  filter:drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 55%, transparent));
 }
+.app-logo img{ max-width:100%; max-height:100%; object-fit:contain; }
+.app-tile:hover .app-logo{ transform:scale(1.16) translateY(-2px); }
 
 .app-name{
-  font-family:'VT323', monospace;
-  font-size:19px;
-  color:var(--cyan);
-  letter-spacing:1px;
-  text-align:center;
-  text-shadow:0 0 6px rgba(0,229,255,0.4);
-  line-height:1.1;
+  font-family:'VT323', monospace; font-size:19px; letter-spacing:1px; text-align:center; line-height:1.1;
+  color:var(--accent); text-shadow:0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
 }
+.app-desc{ font-family:'VT323', monospace; font-size:14px; color:#5a7080; letter-spacing:1px; text-align:center; }
 
-.app-desc{
-  font-family:'VT323', monospace;
-  font-size:14px;
-  color:#5a7080;
-  letter-spacing:1px;
-  text-align:center;
-}
-
-/* Specific tile accent colors */
-.app-tile.sinister-tv:hover{ border-color:var(--green); box-shadow:0 0 20px rgba(0,255,136,0.15); }
-.app-tile.sinister-tv .app-name{ color:var(--green); text-shadow:0 0 6px rgba(0,255,136,0.4); }
-
-.app-tile.youtube:hover{ border-color:#ff0000; box-shadow:0 0 20px rgba(255,0,0,0.15); }
-.app-tile.youtube .app-name{ color:#ff4444; text-shadow:0 0 6px rgba(255,68,68,0.4); }
-
-.app-tile.pluto:hover{ border-color:#f8d900; box-shadow:0 0 20px rgba(248,217,0,0.15); }
-.app-tile.pluto .app-name{ color:var(--yellow); text-shadow:0 0 6px rgba(255,204,0,0.4); }
-
-.app-tile.tubi:hover{ border-color:#f57120; box-shadow:0 0 20px rgba(245,113,32,0.15); }
-.app-tile.tubi .app-name{ color:#f57120; text-shadow:0 0 6px rgba(245,113,32,0.4); }
-
-.app-tile.twitch:hover{ border-color:#9146ff; box-shadow:0 0 20px rgba(145,70,255,0.15); }
-.app-tile.twitch .app-name{ color:#9146ff; text-shadow:0 0 6px rgba(145,70,255,0.4); }
-
-.app-tile.spotify:hover{ border-color:#1db954; box-shadow:0 0 20px rgba(29,185,84,0.15); }
-.app-tile.spotify .app-name{ color:#1db954; text-shadow:0 0 6px rgba(29,185,84,0.4); }
-
-.app-tile.localnow:hover{ border-color:#00b3e6; box-shadow:0 0 20px rgba(0,179,230,0.15); }
-.app-tile.localnow .app-name{ color:#00b3e6; text-shadow:0 0 6px rgba(0,179,230,0.4); }
-
-.app-tile.roku:hover{ border-color:#662d91; box-shadow:0 0 20px rgba(102,45,145,0.15); }
-.app-tile.roku .app-name{ color:#a05cd5; text-shadow:0 0 6px rgba(160,92,213,0.4); }
-
-.app-tile.popcornflix:hover{ border-color:#e6b800; box-shadow:0 0 20px rgba(230,184,0,0.15); }
-.app-tile.popcornflix .app-name{ color:#e6b800; text-shadow:0 0 6px rgba(230,184,0,0.4); }
-
-
-.app-tile.plex:hover{ border-color:#e5a00d; box-shadow:0 0 20px rgba(229,160,13,0.15); }
-.app-tile.plex .app-name{ color:#e5a00d; text-shadow:0 0 6px rgba(229,160,13,0.4); }
-
-
-.app-tile.rakuten:hover{ border-color:#bf0000; box-shadow:0 0 20px rgba(191,0,0,0.15); }
-.app-tile.rakuten .app-name{ color:#e63c3c; text-shadow:0 0 6px rgba(230,60,60,0.4); }
-
-
-
-
-.app-tile.fawesome:hover{ border-color:#ff6b35; box-shadow:0 0 20px rgba(255,107,53,0.15); }
-.app-tile.fawesome .app-name{ color:#ff6b35; text-shadow:0 0 6px rgba(255,107,53,0.4); }
-
-.app-tile.arte:hover{ border-color:#ff7f2a; box-shadow:0 0 20px rgba(255,127,42,0.15); }
-.app-tile.arte .app-name{ color:#ff7f2a; text-shadow:0 0 6px rgba(255,127,42,0.4); }
-
-
-.app-tile.pbs:hover{ border-color:#2638c4; box-shadow:0 0 20px rgba(38,56,196,0.15); }
-.app-tile.pbs .app-name{ color:#5b6ee8; text-shadow:0 0 6px rgba(91,110,232,0.4); }
-
-.app-tile.oldgames:hover{ border-color:#00ff88; box-shadow:0 0 20px rgba(0,255,136,0.15); }
-.app-tile.oldgames .app-name{ color:#00ff88; text-shadow:0 0 6px rgba(0,255,136,0.4); }
-
-.app-tile.playbrain:hover{ border-color:#b57edc; box-shadow:0 0 20px rgba(181,126,220,0.15); }
-.app-tile.playbrain .app-name{ color:#b57edc; text-shadow:0 0 6px rgba(181,126,220,0.4); }
-
-.app-tile.newgrounds:hover{ border-color:#ff9900; box-shadow:0 0 20px rgba(255,153,0,0.15); }
-.app-tile.newgrounds .app-name{ color:#ff9900; text-shadow:0 0 6px rgba(255,153,0,0.4); }
-
-.app-tile.coolmath:hover{ border-color:#ffd23f; box-shadow:0 0 20px rgba(255,210,63,0.15); }
-.app-tile.coolmath .app-name{ color:#ffd23f; text-shadow:0 0 6px rgba(255,210,63,0.4); }
-
-.app-tile.itch:hover{ border-color:#fa5c5c; box-shadow:0 0 20px rgba(250,92,92,0.15); }
-.app-tile.itch .app-name{ color:#fa5c5c; text-shadow:0 0 6px rgba(250,92,92,0.4); }
-
-
-.app-tile.lichess:hover{ border-color:#d0d0d0; box-shadow:0 0 20px rgba(208,208,208,0.15); }
-.app-tile.lichess .app-name{ color:#d0d0d0; text-shadow:0 0 6px rgba(208,208,208,0.4); }
-
-.app-tile.agar:hover{ border-color:#ff5b5b; box-shadow:0 0 20px rgba(255,91,91,0.15); }
-.app-tile.agar .app-name{ color:#ff5b5b; text-shadow:0 0 6px rgba(255,91,91,0.4); }
-
-.app-tile.skribbl:hover{ border-color:#00c2c7; box-shadow:0 0 20px rgba(0,194,199,0.15); }
-.app-tile.skribbl .app-name{ color:#00c2c7; text-shadow:0 0 6px rgba(0,194,199,0.4); }
-
-
-
-.app-tile.cookieclicker:hover{ border-color:#c68958; box-shadow:0 0 20px rgba(198,137,88,0.15); }
-.app-tile.cookieclicker .app-name{ color:#c68958; text-shadow:0 0 6px rgba(198,137,88,0.4); }
-
-
-.app-tile.eightball:hover{ border-color:#0a7d2c; box-shadow:0 0 20px rgba(10,125,44,0.15); }
-.app-tile.eightball .app-name{ color:#2ecc71; text-shadow:0 0 6px rgba(46,204,113,0.4); }
-
-.app-tile.slither:hover{ border-color:#4caf50; box-shadow:0 0 20px rgba(76,175,80,0.15); }
-.app-tile.slither .app-name{ color:#4caf50; text-shadow:0 0 6px rgba(76,175,80,0.4); }
-
-.app-tile.shellshock:hover{ border-color:#f4c430; box-shadow:0 0 20px rgba(244,196,48,0.15); }
-.app-tile.shellshock .app-name{ color:#f4c430; text-shadow:0 0 6px rgba(244,196,48,0.4); }
-
-.app-tile.merczone:hover{ border-color:#4a7c3a; box-shadow:0 0 20px rgba(74,124,58,0.15); }
-.app-tile.merczone .app-name{ color:#7cb342; text-shadow:0 0 6px rgba(124,179,66,0.4); }
-
-.app-tile.deadshot:hover{ border-color:#c0392b; box-shadow:0 0 20px rgba(192,57,43,0.15); }
-.app-tile.deadshot .app-name{ color:#e74c3c; text-shadow:0 0 6px rgba(231,76,60,0.4); }
-
-.app-tile.venge:hover{ border-color:#00d9ff; box-shadow:0 0 20px rgba(0,217,255,0.15); }
-.app-tile.venge .app-name{ color:#00d9ff; text-shadow:0 0 6px rgba(0,217,255,0.4); }
-
-.app-tile.zombs:hover{ border-color:#ff9f1c; box-shadow:0 0 20px rgba(255,159,28,0.15); }
-.app-tile.zombs .app-name{ color:#ff9f1c; text-shadow:0 0 6px rgba(255,159,28,0.4); }
-
-.app-tile.krunker:hover{ border-color:#e8663d; box-shadow:0 0 20px rgba(232,102,61,0.15); }
-.app-tile.krunker .app-name{ color:#e8663d; text-shadow:0 0 6px rgba(232,102,61,0.4); }
-
-
-
-
-/* ── NOW PLAYING BAR ── */
+/* ══════════════ NOW OPEN BAR ══════════════ */
 #now-playing{
-  background:linear-gradient(90deg,#0a0c10,#111520,#0a0c10);
-  border:1px solid var(--brand);
-  border-radius:4px;
-  padding:8px 16px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  flex-shrink:0;
+  position:relative; z-index:10;
+  background:linear-gradient(90deg, rgba(8,10,16,0.9), rgba(17,21,32,0.9), rgba(8,10,16,0.9));
+  border:1px solid var(--brand); border-radius:5px;
+  padding:8px 18px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
 }
+.np-label{ font-family:'VT323', monospace; font-size:15px; color:#5a7080; letter-spacing:2px; }
+#np-app{ font-family:'VT323', monospace; font-size:20px; color:var(--cyan); text-shadow:0 0 8px rgba(0,229,255,0.5); letter-spacing:2px; }
 
-.np-label{
-  font-family:'VT323', monospace;
-  font-size:16px;
-  color:#4a6070;
-  letter-spacing:2px;
-}
-
-#np-app{
-  font-family:'VT323', monospace;
-  font-size:20px;
-  color:var(--cyan);
-  text-shadow:0 0 8px rgba(0,229,255,0.5);
-  letter-spacing:2px;
-}
-
-/* ── CONTROLS BAR ── */
+/* ══════════════ CONTROLS ══════════════ */
 #controls{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:12px;
+  position:relative; z-index:10;
+  display:flex; align-items:center; justify-content:center; gap:12px;
   padding:12px 20px;
-  background:linear-gradient(90deg,#0a0c10,#111520,#0a0c10);
-  border-top:1px solid var(--brand);
-  flex-shrink:0;
+  background:linear-gradient(90deg, rgba(8,10,16,0.9), rgba(17,21,32,0.9), rgba(8,10,16,0.9));
+  border-top:1px solid var(--brand); flex-shrink:0;
 }
-
-.ctrl-btn{
-  background:var(--btn-bg);
-  border:1px solid var(--btn-border);
-  color:#4a6070;
-  font-family:'VT323', monospace;
-  font-size:16px;
-  padding:6px 14px;
-  cursor:pointer;
-  border-radius:3px;
-  letter-spacing:1px;
-  transition:all 0.15s;
-}
-
-.ctrl-btn:hover{
-  border-color:var(--cyan);
-  color:var(--cyan);
-}
-
-#power-btn{
-  font-size:18px;
-  color:var(--green);
-  border-color:var(--green);
-  text-shadow:0 0 8px rgba(0,255,136,0.5);
-  box-shadow:0 0 10px rgba(0,255,136,0.1);
-}
-
-#power-btn.off{
-  color:#ff4444;
-  border-color:#ff4444;
-  text-shadow:0 0 8px rgba(255,68,68,0.5);
-  box-shadow:0 0 10px rgba(255,68,68,0.1);
-}
-
-#back-btn{
-  display:none;
-}
+#controls .np-label{ text-align:center; }
 
 /* Off screen */
-#off-screen{
-  position:fixed;
-  inset:0;
-  background:#000;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:9000;
-  flex-direction:column;
-  gap:10px;
-}
-
-#off-screen.show{
-  display:flex;
-}
-
-.off-dot{
-  width:4px;
-  height:4px;
-  background:#fff;
-  border-radius:50%;
-  opacity:0.3;
-  animation:flicker 0.1s ease-out forwards;
-}
-
-@keyframes flicker{
-  0%{opacity:1;transform:scale(3);}
-  100%{opacity:0;transform:scale(0);}
-}
+#off-screen{ position:fixed; inset:0; background:#000; display:none; align-items:center; justify-content:center; z-index:9000; }
+#off-screen.show{ display:flex; }
+.off-dot{ width:4px; height:4px; background:#fff; border-radius:50%; animation:flicker 0.12s ease-out forwards; }
+@keyframes flicker{ 0%{opacity:1; transform:scale(3);} 100%{opacity:0; transform:scale(0);} }
 </style>
 </head>
 <body>
 
+<!-- CRT boot -->
+<div id="boot"><div class="crt-line"></div></div>
+
+<!-- Depth background layers -->
+<div class="bg-layer bg-aurora"></div>
+<div class="bg-layer bg-fog"></div>
+<div class="bg-layer bg-grid"></div>
+<div id="noise"></div>
+
+<div id="app-shell" style="display:flex; flex-direction:column; height:100%;">
+
 <header>
   <div class="logo">SINISTER <span>HOME</span></div>
-  <div class="weather" id="weather">
-    <span class="wx-icon" id="wx-icon">◌</span>
-    <span class="wx-temp" id="wx-temp">--°</span>
-    <span class="wx-loc" id="wx-loc">LOCATING…</span>
+  <div class="header-right">
+    <div class="weather" id="weather">
+      <span class="wx-icon" id="wx-icon">◌</span>
+      <div class="wx-stack">
+        <span class="wx-temp" id="wx-temp">--°</span>
+        <span class="wx-loc" id="wx-loc">LOCATING…</span>
+      </div>
+    </div>
+    <div class="clock-wrap">
+      <span class="clock" id="clock">00:00:00</span>
+      <span class="clock-day" id="clock-day">———</span>
+    </div>
   </div>
-  <div class="clock" id="clock">00:00:00</div>
 </header>
 
 <main>
   <div id="screen-area">
     <div id="home-screen">
-      <div class="home-title">⬡ SINISTER MEDIA CENTER ⬡</div>
-      <div class="home-subtitle">SELECT AN APP TO BEGIN</div>
-            <div class="section-header">⬡ SINISTER ORIGINALS</div>
-      <div class="app-grid">
 
-        <div class="app-tile sinister-tv" onclick="launchApp('Sinister TV','sinister-tv')">
-          <div class="app-icon">📺</div>
-          <div class="app-name">SINISTER TV</div>
-          <div class="app-desc">Live Channels</div>
+      <!-- Hero banner -->
+      <div id="hero" onclick="heroLaunch()">
+        <div class="hero-glow" id="hero-glow"></div>
+        <div class="hero-content">
+          <div class="hero-tag" id="hero-tag">NOW BROADCASTING</div>
+          <div class="hero-title" id="hero-title">SINISTER TV</div>
+          <div class="hero-sub" id="hero-sub">205 Channels · Late Night Broadcast</div>
+          <div class="hero-btn" id="hero-btn">▶ LAUNCH</div>
         </div>
-
-        <div class="app-tile" onclick="launchApp('Dead Archive Radio','radio')">
-          <div class="app-icon">📻</div>
-          <div class="app-name">RADIO</div>
-          <div class="app-desc">73 Stations</div>
-        </div>
-
-        <div class="app-tile" onclick="launchApp('Arcade','arcade')">
-          <div class="app-icon">🕹️</div>
-          <div class="app-name">ARCADE</div>
-          <div class="app-desc">Classic Games</div>
-        </div>
-
+        <div class="hero-logo"><img id="hero-img" src="" alt=""></div>
       </div>
 
-      <div class="section-header">📺 LIVE TV</div>
-      <div class="app-grid">
-
-        <div class="app-tile pluto" onclick="launchUrl('Pluto TV','https://pluto.tv/us/live-tv/673247127d5da5000817b4d6')">
-          <div class="app-icon">🪐</div>
-          <div class="app-name">PLUTO TV</div>
-          <div class="app-desc">Free Live TV</div>
-        </div>
-
-        <div class="app-tile tubi" onclick="launchUrl('Tubi','https://tubitv.com/live')">
-          <div class="app-icon">🎬</div>
-          <div class="app-name">TUBI</div>
-          <div class="app-desc">Free Movies</div>
-        </div>
-
-        <div class="app-tile roku" onclick="launchUrl('Roku Channel','https://therokuchannel.roku.com')">
-          <div class="app-icon">🎞️</div>
-          <div class="app-name">ROKU</div>
-          <div class="app-desc">Free Movies &amp; TV</div>
-        </div>
-
-        <div class="app-tile localnow" onclick="launchUrl('Local Now','https://localnow.com/channels/epg-local-now-nyc')">
-          <div class="app-icon">🗞️</div>
-          <div class="app-name">LOCAL NOW</div>
-          <div class="app-desc">NYC News &amp; Live</div>
-        </div>
-
-      </div>
-
-      <div class="section-header">🎬 MOVIES & SHOWS</div>
-      <div class="app-grid">
-
-        <div class="app-tile popcornflix" onclick="launchUrl('Popcornflix','https://popcornflix.com/search')">
-          <div class="app-icon">🍿</div>
-          <div class="app-name">POPCORNFLIX</div>
-          <div class="app-desc">Free Movies</div>
-        </div>
-
-        <div class="app-tile plex" onclick="launchUrl('Plex','https://watch.plex.tv/')">
-          <div class="app-icon">🎬</div>
-          <div class="app-name">PLEX</div>
-          <div class="app-desc">50K+ Movies</div>
-        </div>
-
-        <div class="app-tile rakuten" onclick="launchUrl('Rakuten TV','https://rakuten.tv/')">
-          <div class="app-icon">🎥</div>
-          <div class="app-name">RAKUTEN TV</div>
-          <div class="app-desc">Free Films</div>
-        </div>
-
-        <div class="app-tile fawesome" onclick="launchUrl('Fawesome','https://fawesome.tv/')">
-          <div class="app-icon">😎</div>
-          <div class="app-name">FAWESOME</div>
-          <div class="app-desc">Cult &amp; Niche</div>
-        </div>
-
-        <div class="app-tile arte" onclick="launchUrl('ARTE.tv','https://www.arte.tv/en/')">
-          <div class="app-icon">🎭</div>
-          <div class="app-name">ARTE.TV</div>
-          <div class="app-desc">Arthouse &amp; Docs</div>
-        </div>
-
-        <div class="app-tile pbs" onclick="launchUrl('PBS','https://www.pbs.org/')">
-          <div class="app-icon">📖</div>
-          <div class="app-name">PBS</div>
-          <div class="app-desc">Documentaries</div>
-        </div>
-
-      </div>
-
-      <div class="section-header">🎵 MUSIC & VIDEO</div>
-      <div class="app-grid">
-
-        <div class="app-tile youtube" onclick="launchUrl('YouTube','https://www.youtube.com/watch?v=7nnSn66ZUuE&list=PLDHrBEjkLAMUGN-TFSM71t-0RM8wzKxH7')">
-          <div class="app-icon">▶️</div>
-          <div class="app-name">YOUTUBE</div>
-          <div class="app-desc">Video Streaming</div>
-        </div>
-
-        <div class="app-tile twitch" onclick="launchUrl('Twitch','https://www.twitch.tv')">
-          <div class="app-icon">🎮</div>
-          <div class="app-name">TWITCH</div>
-          <div class="app-desc">Live Streams</div>
-        </div>
-
-        <div class="app-tile spotify" onclick="launchUrl('Spotify','https://open.spotify.com')">
-          <div class="app-icon">🎵</div>
-          <div class="app-name">SPOTIFY</div>
-          <div class="app-desc">Music</div>
-        </div>
-
-      </div>
-
-      <div class="section-header">🕹️ GAMES</div>
-      <div class="app-grid">
-
-        <div class="app-tile oldgames" onclick="launchUrl('Retro Games','https://oldgames.games/')">
-          <div class="app-icon">🎮</div>
-          <div class="app-name">RETRO GAMES</div>
-          <div class="app-desc">SNES · N64 · PS1</div>
-        </div>
-
-        <div class="app-tile playbrain" onclick="launchUrl('PlayBrain','https://playbrain.games/')">
-          <div class="app-icon">🧩</div>
-          <div class="app-name">PLAYBRAIN</div>
-          <div class="app-desc">Puzzles &amp; Classics</div>
-        </div>
-
-        <div class="app-tile newgrounds" onclick="launchUrl('Newgrounds','https://www.newgrounds.com/games')">
-          <div class="app-icon">🅝</div>
-          <div class="app-name">NEWGROUNDS</div>
-          <div class="app-desc">Indie Classics</div>
-        </div>
-
-        <div class="app-tile coolmath" onclick="launchUrl('Coolmath Games','https://www.coolmathgames.com/')">
-          <div class="app-icon">🔢</div>
-          <div class="app-name">COOLMATH</div>
-          <div class="app-desc">Slope · Run 3</div>
-        </div>
-
-        <div class="app-tile itch" onclick="launchUrl('itch.io','https://itch.io/games/platform-web')">
-          <div class="app-icon">🎨</div>
-          <div class="app-name">ITCH.IO</div>
-          <div class="app-desc">Indie Web Games</div>
-        </div>
-
-        <div class="app-tile lichess" onclick="launchUrl('Lichess','https://lichess.org/')">
-          <div class="app-icon">♟️</div>
-          <div class="app-name">LICHESS</div>
-          <div class="app-desc">Free Chess</div>
-        </div>
-
-        <div class="app-tile agar" onclick="launchUrl('Agar.io','https://agar.io/')">
-          <div class="app-icon">🔴</div>
-          <div class="app-name">AGAR.IO</div>
-          <div class="app-desc">Cell Eater</div>
-        </div>
-
-        <div class="app-tile skribbl" onclick="launchUrl('Skribbl.io','https://skribbl.io/')">
-          <div class="app-icon">✏️</div>
-          <div class="app-name">SKRIBBL.IO</div>
-          <div class="app-desc">Draw &amp; Guess</div>
-        </div>
-
-        <div class="app-tile cookieclicker" onclick="launchUrl('Cookie Clicker','https://orteil.dashnet.org/cookieclicker/')">
-          <div class="app-icon">🍪</div>
-          <div class="app-name">COOKIE CLICKER</div>
-          <div class="app-desc">Idle Original</div>
-        </div>
-
-        <div class="app-tile eightball" onclick="launchUrl('8 Ball Pool','https://8ballpool.com/game')">
-          <div class="app-icon">🎱</div>
-          <div class="app-name">8 BALL POOL</div>
-          <div class="app-desc">World #1 Pool</div>
-        </div>
-
-        <div class="app-tile slither" onclick="launchUrl('Slither.io','https://slither.io/')">
-          <div class="app-icon">🐍</div>
-          <div class="app-name">SLITHER.IO</div>
-          <div class="app-desc">Snake Battle</div>
-        </div>
-
-        <div class="app-tile shellshock" onclick="launchUrl('Shell Shockers','https://shellshock.io/')">
-          <div class="app-icon">🥚</div>
-          <div class="app-name">SHELL SHOCKERS</div>
-          <div class="app-desc">Egg FPS</div>
-        </div>
-
-        <div class="app-tile merczone" onclick="launchUrl('Merc Zone','https://merczone.com/')">
-          <div class="app-icon">🎖️</div>
-          <div class="app-name">MERC ZONE</div>
-          <div class="app-desc">Fast FPS</div>
-        </div>
-
-        <div class="app-tile deadshot" onclick="launchUrl('Deadshot.io','https://deadshot.io/')">
-          <div class="app-icon">🎯</div>
-          <div class="app-name">DEADSHOT.IO</div>
-          <div class="app-desc">Skill FPS</div>
-        </div>
-
-        <div class="app-tile venge" onclick="launchUrl('Venge.io','https://venge.io/')">
-          <div class="app-icon">⚡</div>
-          <div class="app-name">VENGE.IO</div>
-          <div class="app-desc">Hero Shooter</div>
-        </div>
-
-        <div class="app-tile zombs" onclick="launchUrl('ZombsRoyale.io','https://zombsroyale.io/')">
-          <div class="app-icon">🪂</div>
-          <div class="app-name">ZOMBS ROYALE</div>
-          <div class="app-desc">Battle Royale</div>
-        </div>
-
-        <div class="app-tile krunker" onclick="launchUrl('Krunker.io','https://krunker.io/')">
-          <div class="app-icon">🔫</div>
-          <div class="app-name">KRUNKER.IO</div>
-          <div class="app-desc">Browser FPS</div>
-        </div>
-
-      </div>
+      <!-- Tiles render here -->
+      <div id="tile-root"></div>
 
     </div>
-    <!-- iframes load here -->
   </div>
 
   <div id="now-playing">
@@ -814,182 +427,210 @@ main{
   <span class="np-label">USE THE TV'S POWER &amp; HOME BUTTONS TO NAVIGATE</span>
 </div>
 
-<div id="off-screen">
-  <div class="off-dot"></div>
-</div>
+</div><!-- /app-shell -->
+
+<div id="off-screen"><div class="off-dot"></div></div>
 
 <script>
-// ── Clock ──
-function updateClock(){
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  const s = String(now.getSeconds()).padStart(2,'0');
-  document.getElementById('clock').textContent = h+':'+m+':'+s;
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ── Weather widget (IP-based location + Open-Meteo, both free/no-key/no-signup) ──
-function wxIcon(code){
-  // WMO weather codes → emoji
-  if(code===0) return '☀️';
-  if(code>=1 && code<=2) return '⛅';
-  if(code===3) return '☁️';
-  if(code>=45 && code<=48) return '🌫️';
-  if(code>=51 && code<=67) return '🌧️';
-  if(code>=71 && code<=77) return '❄️';
-  if(code>=80 && code<=82) return '🌦️';
-  if(code>=85 && code<=86) return '🌨️';
-  if(code>=95) return '⛈️';
-  return '🌡️';
-}
-
-async function loadWeather(){
-  try{
-    // 1) IP-based geolocation (no permission prompt, works in SL)
-    const geoRes = await fetch('https://ipapi.co/json/');
-    const geo = await geoRes.json();
-    const lat = geo.latitude, lon = geo.longitude;
-    const city = geo.city || geo.region || '';
-    const isUS = geo.country_code === 'US';
-    const unit = isUS ? 'fahrenheit' : 'celsius';
-    const unitSym = isUS ? '°F' : '°C';
-
-    if(lat == null || lon == null) throw new Error('no coords');
-
-    // 2) Weather from Open-Meteo (no API key)
-    const wxRes = await fetch(
-      'https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+
-      '&current=temperature_2m,weather_code&temperature_unit='+unit
-    );
-    const wx = await wxRes.json();
-    const temp = Math.round(wx.current.temperature_2m);
-    const code = wx.current.weather_code;
-
-    document.getElementById('wx-icon').textContent = wxIcon(code);
-    document.getElementById('wx-temp').textContent = temp + unitSym;
-    document.getElementById('wx-loc').textContent = city || 'LOCAL';
-  }catch(e){
-    document.getElementById('wx-icon').textContent = '🌡️';
-    document.getElementById('wx-temp').textContent = '--°';
-    document.getElementById('wx-loc').textContent = 'N/A';
-  }
-}
-loadWeather();
-// Refresh weather every 15 minutes
-setInterval(loadWeather, 15*60*1000);
-
-// ── State ──
-let tvOff = false;
-let currentApp = 'HOME SCREEN';
-let popupWindow = null;
-
-// ── App URLs - update these to point to your hosted files ──
+/* ═══════════════════════════════════════════════════════
+   APP DATA — edit tiles here. section keys map to labels below.
+   type:'app' uses APP_URLS[key]; type:'url' navigates directly.
+   ═══════════════════════════════════════════════════════ */
 const APP_URLS = {
   'sinister-tv': 'https://sinisterraz.github.io/index.html/',
   'radio': 'https://sinisterraz.github.io/SinisterRadio/',
   'arcade': 'https://sinisterraz.github.io/SinisterArcadeArch/',
 };
 
-// ── Launch internal app ──
-function launchApp(name, key){
+const SECTIONS = [
+  { key:'originals', label:'SINISTER ORIGINALS' },
+  { key:'livetv',    label:'LIVE TV' },
+  { key:'movies',    label:'MOVIES & SHOWS' },
+  { key:'music',     label:'MUSIC & VIDEO' },
+  { key:'games',     label:'GAMES' },
+];
+
+const APPS = [
+  // ORIGINALS
+  { s:'originals', type:'app', key:'sinister-tv', name:'SINISTER TV', desc:'Live Channels', img:'data:image/webp;base64,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', color:'#9146ff' },
+  { s:'originals', type:'app', key:'radio',       name:'RADIO',       desc:'73 Stations',   img:'data:image/webp;base64,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', color:'#e63c3c' },
+  { s:'originals', type:'app', key:'arcade',      name:'ARCADE',      desc:'Retro Games',   img:'data:image/webp;base64,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', color:'#00ff88' },
+
+  // LIVE TV
+  { s:'livetv', type:'url', url:'https://pluto.tv/us/live-tv/673247127d5da5000817b4d6', name:'PLUTO TV', desc:'Free Live TV', icon:'🪐', color:'#ffcc00' },
+  { s:'livetv', type:'url', url:'https://tubitv.com/live', name:'TUBI', desc:'Free TV', icon:'🎬', color:'#f57120' },
+  { s:'livetv', type:'url', url:'https://therokuchannel.roku.com', name:'ROKU', desc:'Free Channels', icon:'🎞️', color:'#a05cd5' },
+  { s:'livetv', type:'url', url:'https://localnow.com/channels/epg-local-now-nyc', name:'LOCAL NOW', desc:'NYC Live', icon:'🗞️', color:'#00b3e6' },
+
+  // MOVIES & SHOWS
+  { s:'movies', type:'url', url:'https://popcornflix.com/search', name:'POPCORNFLIX', desc:'Free Movies', icon:'🍿', color:'#e6b800' },
+  { s:'movies', type:'url', url:'https://watch.plex.tv/', name:'PLEX', desc:'50K+ Movies', icon:'🎬', color:'#e5a00d' },
+  { s:'movies', type:'url', url:'https://rakuten.tv/', name:'RAKUTEN TV', desc:'Free Films', icon:'🎥', color:'#e63c3c' },
+  { s:'movies', type:'url', url:'https://fawesome.tv/', name:'FAWESOME', desc:'Cult & Niche', icon:'😎', color:'#ff6b35' },
+  { s:'movies', type:'url', url:'https://www.arte.tv/en/', name:'ARTE.TV', desc:'Arthouse & Docs', icon:'🎭', color:'#ff7f2a' },
+  { s:'movies', type:'url', url:'https://www.pbs.org/', name:'PBS', desc:'Documentaries', icon:'📖', color:'#5b6ee8' },
+
+  // MUSIC & VIDEO
+  { s:'music', type:'url', url:'https://www.youtube.com/watch?v=7nnSn66ZUuE&list=PLDHrBEjkLAMUGN-TFSM71t-0RM8wzKxH7', name:'YOUTUBE', desc:'Video', icon:'▶️', color:'#ff4444' },
+  { s:'music', type:'url', url:'https://www.twitch.tv', name:'TWITCH', desc:'Live Streams', icon:'🎮', color:'#9146ff' },
+  { s:'music', type:'url', url:'https://open.spotify.com', name:'SPOTIFY', desc:'Music', icon:'🎵', color:'#1db954' },
+  { s:'music', type:'url', url:'https://app.kosmi.io/', name:'KOSMI', desc:'Watch Together', icon:'🖥️', color:'#7c4dff' },
+
+  // GAMES
+  { s:'games', type:'url', url:'https://oldgames.games/', name:'RETRO GAMES', desc:'SNES · N64 · PS1', icon:'🎮', color:'#00ff88' },
+  { s:'games', type:'url', url:'https://playbrain.games/', name:'PLAYBRAIN', desc:'Puzzles', icon:'🧩', color:'#b57edc' },
+  { s:'games', type:'url', url:'https://www.newgrounds.com/games', name:'NEWGROUNDS', desc:'Indie Classics', icon:'🅝', color:'#ff9900' },
+  { s:'games', type:'url', url:'https://www.coolmathgames.com/', name:'COOLMATH', desc:'Slope · Run 3', icon:'🔢', color:'#ffd23f' },
+  { s:'games', type:'url', url:'https://itch.io/games/platform-web', name:'ITCH.IO', desc:'Indie Web Games', icon:'🎨', color:'#fa5c5c' },
+  { s:'games', type:'url', url:'https://lichess.org/', name:'LICHESS', desc:'Free Chess', icon:'♟️', color:'#d0d0d0' },
+  { s:'games', type:'url', url:'https://agar.io/', name:'AGAR.IO', desc:'Cell Eater', icon:'🔴', color:'#ff5b5b' },
+  { s:'games', type:'url', url:'https://skribbl.io/', name:'SKRIBBL.IO', desc:'Draw & Guess', icon:'✏️', color:'#00c2c7' },
+  { s:'games', type:'url', url:'https://orteil.dashnet.org/cookieclicker/', name:'COOKIE CLICKER', desc:'Idle Original', icon:'🍪', color:'#c68958' },
+  { s:'games', type:'url', url:'https://8ballpool.com/game', name:'8 BALL POOL', desc:'World #1 Pool', icon:'🎱', color:'#2ecc71' },
+  { s:'games', type:'url', url:'https://slither.io/', name:'SLITHER.IO', desc:'Snake Battle', icon:'🐍', color:'#4caf50' },
+  { s:'games', type:'url', url:'https://shellshock.io/', name:'SHELL SHOCKERS', desc:'Egg FPS', icon:'🥚', color:'#f4c430' },
+  { s:'games', type:'url', url:'https://deadshot.io/', name:'DEADSHOT.IO', desc:'Skill FPS', icon:'🎯', color:'#e74c3c' },
+  { s:'games', type:'url', url:'https://venge.io/', name:'VENGE.IO', desc:'Hero Shooter', icon:'⚡', color:'#00d9ff' },
+  { s:'games', type:'url', url:'https://zombsroyale.io/', name:'ZOMBS ROYALE', desc:'Battle Royale', icon:'🪂', color:'#ff9f1c' },
+  { s:'games', type:'url', url:'https://krunker.io/', name:'KRUNKER.IO', desc:'Browser FPS', icon:'🔫', color:'#e8663d' },
+  { s:'games', type:'url', url:'https://smashkarts.io/', name:'SMASH KARTS', desc:'Kart Combat', icon:'🏎️', color:'#ff4081' },
+  { s:'games', type:'url', url:'https://drift.io/', name:'DRIFT.IO', desc:'Multiplayer Drift', icon:'🏁', color:'#00e0b0' },
+  { s:'games', type:'url', url:'https://bloxd.io/', name:'BLOXD.IO', desc:'Sandbox Action', icon:'🧱', color:'#8bc34a' },
+];
+
+/* ═══════════ RENDER TILES ═══════════ */
+function renderTiles(){
+  const root = document.getElementById('tile-root');
+  let html = '';
+  for(const sec of SECTIONS){
+    const items = APPS.filter(a => a.s === sec.key);
+    if(!items.length) continue;
+    html += '<div class="section-header">'+sec.label+'</div>';
+    html += '<div class="app-grid">';
+    for(const a of items){
+      const arg = a.type === 'app' ? a.key : a.url;
+      const iconHtml = a.img
+        ? '<div class="app-logo"><img src="'+a.img+'" alt="'+a.name+'"></div>'
+        : '<div class="app-icon">'+a.icon+'</div>';
+      html += '<div class="app-tile" style="--accent:'+a.color+'" '
+            + 'onclick="tileClick(this,\''+a.type+'\',\''+encodeURIComponent(arg)+'\',\''+a.name.replace(/'/g,"\\'")+'\')">'
+            + '<span class="sheen"></span>'
+            + iconHtml
+            + '<div class="app-name">'+a.name+'</div>'
+            + '<div class="app-desc">'+a.desc+'</div>'
+            + '</div>';
+    }
+    html += '</div>';
+  }
+  root.innerHTML = html;
+}
+
+/* ═══════════ LAUNCH LOGIC ═══════════ */
+let tvOff = false;
+
+function tileClick(el, type, encArg, name){
   if(tvOff) return;
+  const arg = decodeURIComponent(encArg);
+  el.classList.add('launching');
+  document.getElementById('status').textContent = 'LAUNCHING…';
+  // brief launch flourish, then navigate the whole prim (SL-compatible)
+  setTimeout(function(){
+    if(type === 'app'){ launchApp(name, arg); }
+    else { launchUrl(name, arg); }
+  }, 140);
+}
+
+// Navigate whole prim to an internal app (SL-compatible). HOME button returns.
+function launchApp(name, key){
   const url = APP_URLS[key];
   if(!url){ alert('App not connected yet — update APP_URLS with your hosted URL.'); return; }
-  // Navigate the whole prim to the app (SL-compatible). HOME button returns here.
   window.location.href = url;
 }
-
-// ── Launch external URL in popup window ──
+// Navigate whole prim to any URL (top-level, not iframe) so YouTube etc. load.
 function launchUrl(name, url){
-  if(tvOff) return;
-  // Navigate the ENTIRE prim to the app URL (top-level, not nested iframe).
-  // This works in Second Life media-on-prim exactly like setting the prim URL by hand,
-  // so sites like YouTube that block iframes still load fine.
-  // The physical HOME button on the TV returns to this launcher.
   window.location.href = url;
 }
 
-// ── Open URL in screen area ──
-function openInScreen(name, url){
-  currentApp = name;
-  document.getElementById('np-app').textContent = name.toUpperCase();
-  document.getElementById('status').textContent = 'LOADING...';
+/* ═══════════ HERO BANNER ═══════════ */
+const HERO_ITEMS = [
+  { tag:'NOW BROADCASTING', title:'SINISTER TV', sub:'205 Channels · Late Night Broadcast', key:'sinister-tv', glow:'rgba(145,70,255,0.20)' },
+  { tag:'ON AIR',           title:'DEAD ARCHIVE RADIO', sub:'73 Stations · Deep Cuts', key:'radio', glow:'rgba(230,60,60,0.20)' },
+  { tag:'INSERT COIN',      title:'SINISTER ARCADE', sub:'Retro Cabinet Collection', key:'arcade', glow:'rgba(0,255,136,0.18)' },
+];
+function appImgByKey(k){ const a = APPS.find(x => x.key === k); return a && a.img ? a.img : ''; }
+let heroIdx = 0;
+function renderHero(){
+  const h = HERO_ITEMS[heroIdx];
+  document.getElementById('hero-tag').textContent = h.tag;
+  document.getElementById('hero-title').textContent = h.title;
+  document.getElementById('hero-sub').textContent = h.sub;
+  document.getElementById('hero-glow').style.background =
+    'radial-gradient(ellipse 60% 100% at 15% 50%, '+h.glow+', transparent 70%)';
+  const img = appImgByKey(h.key);
+  const el = document.getElementById('hero-img');
+  if(img){ el.src = img; el.style.display='block'; } else { el.style.display='none'; }
+}
+function heroLaunch(){
+  if(tvOff) return;
+  launchApp(HERO_ITEMS[heroIdx].title, HERO_ITEMS[heroIdx].key);
+}
+setInterval(function(){ heroIdx=(heroIdx+1)%HERO_ITEMS.length; renderHero(); }, 9000);
 
-  // Hide home screen
-  document.getElementById('home-screen').style.display = 'none';
+/* ═══════════ CLOCK ═══════════ */
+const DAYS=['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+function updateClock(){
+  const n=new Date();
+  const h=String(n.getHours()).padStart(2,'0');
+  const m=String(n.getMinutes()).padStart(2,'0');
+  const s=String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent=h+':'+m+':'+s;
+  document.getElementById('clock-day').textContent=DAYS[n.getDay()];
+}
+setInterval(updateClock,1000); updateClock();
 
-  // Stop existing iframe audio before removing
-  const existing = document.getElementById('app-frame');
-  if(existing){
-    try{ existing.contentWindow.postMessage('pause','*'); }catch(e){}
-    existing.src = 'about:blank';
-    existing.remove();
+/* ═══════════ WEATHER (unlimited, no-key, no-signup) ═══════════ */
+function wxIcon(c){
+  if(c===0) return '☀️';
+  if(c>=1&&c<=2) return '⛅';
+  if(c===3) return '☁️';
+  if(c>=45&&c<=48) return '🌫️';
+  if(c>=51&&c<=67) return '🌧️';
+  if(c>=71&&c<=77) return '❄️';
+  if(c>=80&&c<=82) return '🌦️';
+  if(c>=85&&c<=86) return '🌨️';
+  if(c>=95) return '⛈️';
+  return '🌡️';
+}
+async function loadWeather(){
+  let lat,lon,city='',isUS=false;
+  const providers=[
+    async()=>{ const g=await(await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client')).json();
+      return {lat:g.latitude,lon:g.longitude,city:g.city||g.locality||'',us:(g.countryCode==='US')}; },
+    async()=>{ const d=await(await fetch('https://freeipapi.com/api/json')).json();
+      return {lat:parseFloat(d.latitude),lon:parseFloat(d.longitude),city:d.cityName||'',us:(d.countryCode==='US')}; }
+  ];
+  for(const p of providers){
+    try{ const g=await p(); if(g.lat!=null&&g.lon!=null&&!isNaN(g.lat)&&!isNaN(g.lon)){ lat=g.lat;lon=g.lon;city=g.city;isUS=g.us; break; } }catch(e){}
   }
-
-  // Create iframe
-  const fr = document.createElement('iframe');
-  fr.id = 'app-frame';
-  fr.src = url;
-  fr.allow = 'autoplay; encrypted-media; fullscreen';
-  fr.allowFullscreen = true;
-  fr.onload = () => { document.getElementById('status').textContent = 'LIVE'; };
-  document.getElementById('screen-area').appendChild(fr);
-
-  // Show back button
-  document.getElementById('back-btn').style.display = 'inline-block';
+  if(lat==null){ document.getElementById('wx-icon').textContent='🌡️'; document.getElementById('wx-temp').textContent='--°'; document.getElementById('wx-loc').textContent='N/A'; return; }
+  try{
+    const unit=isUS?'fahrenheit':'celsius', sym=isUS?'°F':'°C';
+    const wx=await(await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,weather_code&temperature_unit='+unit)).json();
+    document.getElementById('wx-icon').textContent=wxIcon(wx.current.weather_code);
+    document.getElementById('wx-temp').textContent=Math.round(wx.current.temperature_2m)+sym;
+    document.getElementById('wx-loc').textContent=city||'LOCAL';
+  }catch(e){ document.getElementById('wx-icon').textContent='🌡️'; document.getElementById('wx-temp').textContent='--°'; document.getElementById('wx-loc').textContent='N/A'; }
 }
 
-// ── Go home ──
-function goHome(){
-  currentApp = 'HOME SCREEN';
-  document.getElementById('np-app').textContent = 'HOME SCREEN';
-  document.getElementById('status').textContent = 'READY';
-
-  // Close popup window if open
-  if(popupWindow && !popupWindow.closed) popupWindow.close();
-  popupWindow = null;
-
-  // Stop iframe audio then remove
-  const fr = document.getElementById('app-frame');
-  if(fr){
-    try{ fr.contentWindow.postMessage('pause','*'); }catch(e){}
-    fr.src = 'about:blank';
-    fr.remove();
-  }
-
-  // Show home screen
-  document.getElementById('home-screen').style.display = 'flex';
-  document.getElementById('back-btn').style.display = 'none';
-}
-
-// ── Power ──
-function togglePower(){
-  tvOff = !tvOff;
-  const btn = document.getElementById('power-btn');
-  const off = document.getElementById('off-screen');
-  const dot = document.querySelector('.off-dot');
-
-  if(tvOff){
-    // Kill any running app audio immediately
-    if(popupWindow && !popupWindow.closed){ popupWindow.close(); popupWindow = null; }
-    const fr = document.getElementById('app-frame');
-    if(fr){
-      try{ fr.contentWindow.postMessage('pause','*'); }catch(e){}
-      fr.src = 'about:blank';
-    }
-    btn.textContent = '⏻ POWER';
-    btn.classList.add('off');
-    dot.style.animation = 'none';
-    dot.offsetHeight;
-    dot.style.animation = '';
-    off.classList.add('show');
-  } else {
-    btn.classList.remove('off');
-    off.classList.remove('show');
-  }
-}
+/* ═══════════ BOOT ═══════════ */
+window.addEventListener('load', function(){
+  renderTiles();
+  renderHero();
+  loadWeather();
+  setInterval(loadWeather, 15*60*1000);
+  // Remove boot overlay after CRT sequence
+  setTimeout(function(){ document.body.classList.add('booted'); }, 1250);
+});
 </script>
 </body>
 </html>
