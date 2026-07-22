@@ -515,50 +515,70 @@ function renderTiles(){
   root.innerHTML = html;
 }
 
-/* ═══════════ RESYNC + ACCESS CONTROL ═══════════ */
-// Access level is set by the LSL controller. Defaults to ALL until told otherwise.
-let accessLevel = 'ALL';   // 'OWNER' | 'GROUP' | 'ALL'
-let isOwner = false;
-let isGroupMember = false;
+/* ═══════════ RESYNC + CATCH-UP TRANSPORT ═══════════ */
+// These params are handed in by the LSL controller on every (re)load.
+let accessLevel  = 'ALL';
+let LSL_EP       = '';   // this prim's HTTP-in endpoint (from ?ep=)
+let BROADCAST_ST = 0;    // unix epoch the current broadcast began (from ?st=)
 
-// Receive config + resync commands from LSL (via prim media javascript: postMessage)
-window.addEventListener('message', function(e){
-  const d = e.data; if(!d || !d.cmd) return;
-  if(d.cmd === 'SET_ACCESS'){
-    accessLevel   = d.access || 'ALL';
-    isOwner       = !!d.isOwner;
-    isGroupMember = !!d.isGroupMember;
-  }
-  if(d.cmd === 'SYNC_APP'){
-    syncToApp(d.appType, decodeURIComponent(d.appArg||''), d.appName||'');
-  }
-});
-
-function canSelect(){
-  if(accessLevel === 'ALL') return true;
-  if(accessLevel === 'OWNER') return isOwner;
-  if(accessLevel === 'GROUP') return isOwner || isGroupMember;
-  return true;
-}
-function showDenied(){
-  const s = document.getElementById('status');
-  if(s) s.textContent = 'ACCESS: ' + accessLevel + ' ONLY';
-  const np = document.getElementById('np-app');
-  if(np){ np.textContent = '⛔ ACCESS DENIED'; np.style.color = '#ff5050';
-    setTimeout(function(){ np.style.color = ''; np.textContent = 'HOME SCREEN'; }, 2200); }
-}
-function flashSync(name){
-  const np = document.getElementById('np-app');
-  if(np) np.textContent = '⚡ SYNCED · ' + name;
-  const s = document.getElementById('status');
-  if(s) s.textContent = 'SYNCED';
-}
-// Tell LSL a selection was made so it can broadcast to every viewer in-region
-function broadcastToLSL(type, arg, name){
+(function readSyncParams(){
   try{
-    window.parent.postMessage({ cmd:'LAUNCH_APP', appType:type,
-      appArg:encodeURIComponent(arg), appName:name, ts:Date.now() }, '*');
-  }catch(err){}
+    const q = new URLSearchParams(location.search);
+    if(q.get('access')) accessLevel = q.get('access');
+    LSL_EP       = q.get('ep') || '';
+    BROADCAST_ST = parseInt(q.get('st') || '0', 10) || 0;
+  }catch(e){}
+})();
+
+// Seconds since the broadcast started — how far a late joiner must catch up.
+function elapsedNow(){
+  if(!BROADCAST_ST) return 0;
+  const e = Math.floor(Date.now()/1000) - BROADCAST_ST;
+  return e > 0 ? e : 0;
+}
+
+// ---- Per-source URL builder: best time-sync each source allows ----
+function ytEmbed(url, startSec){
+  startSec = Math.max(0, parseInt(startSec||0,10));
+  let id='', list='';
+  try{
+    const u = new URL(url);
+    if(u.hostname.indexOf('youtu.be') > -1)      id = u.pathname.slice(1);
+    else if(u.pathname.indexOf('/embed/') === 0) id = u.pathname.split('/embed/')[1];
+    else                                         id = u.searchParams.get('v') || '';
+    list = u.searchParams.get('list') || '';
+  }catch(e){}
+  let src = 'https://www.youtube.com/embed/' + (id || 'videoseries');
+  const p = ['autoplay=1','mute=1','playsinline=1','rel=0','enablejsapi=1'];
+  if(startSec) p.push('start=' + startSec);
+  if(list)     p.push('list='  + list);
+  return src + '?' + p.join('&');
+}
+function withTime(url, t, st){
+  const sep = url.indexOf('?') > -1 ? '&' : '?';
+  return url + sep + 't=' + (t||0) + '&st=' + (st||0);
+}
+function isYouTube(u){ return /(?:youtube\.com|youtu\.be)/i.test(u); }
+function isArchive(u){ return /archive\.org/i.test(u); }
+
+// Resolve a pick into the final URL, applying catch-up where the source allows.
+function resolveUrl(type, arg, elapsed){
+  if(type === 'app'){
+    const base = APP_URLS[arg];
+    if(!base){ alert('App not connected yet — update APP_URLS with your hosted URL.'); return ''; }
+    return withTime(base, elapsed, BROADCAST_ST);      // TV/Radio seek via ?t=&st=
+  }
+  if(isYouTube(arg)) return ytEmbed(arg, elapsed);     // YouTube seeks via &start=
+  if(isArchive(arg)) return withTime(arg, elapsed, BROADCAST_ST); // Archive player reads ?t=
+  return arg;                                          // live/FAST: channel-level only
+}
+
+// Navigate THIS viewer to a pick, seeking `elapsed` seconds in.
+function goToPick(type, arg, name, elapsed){
+  const url = resolveUrl(type, arg, elapsed);
+  if(!url) return;
+  const np = document.getElementById('np-app'); if(np) np.textContent = name || 'PLAYING';
+  window.location.href = url;
 }
 
 /* ═══════════ LAUNCH LOGIC ═══════════ */
@@ -566,37 +586,42 @@ let tvOff = false;
 
 function tileClick(el, type, encArg, name){
   if(tvOff) return;
-  if(!canSelect()){ showDenied(); return; }
   const arg = decodeURIComponent(encArg);
   if(el) el.classList.add('launching');
   document.getElementById('status').textContent = 'LAUNCHING…';
-  broadcastToLSL(type, arg, name);
-  // brief launch flourish, then navigate the whole prim (SL-compatible)
-  setTimeout(function(){
-    if(type === 'app'){ launchApp(name, arg); }
-    else { launchUrl(name, arg); }
-  }, 140);
+
+  if(LSL_EP){
+    // Report the pick. The controller re-stamps the start time and reloads EVERY
+    // prim (this one included), so the whole group jumps to it together at 0:00.
+    fetch(LSL_EP + '?cmd=launch'
+      + '&type=' + encodeURIComponent(type)
+      + '&arg='  + encodeURIComponent(arg)
+      + '&name=' + encodeURIComponent(name)).catch(function(){});
+    return;   // don't navigate locally — wait for the controller's reload
+  }
+  // No controller (plain browser preview): navigate locally, no group sync.
+  setTimeout(function(){ goToPick(type, arg, name, 0); }, 140);
 }
 
-// Remote viewer picked something — sync this screen to match (no re-broadcast)
+// Called on (re)load when the controller handed us a broadcast to join.
 function syncToApp(type, arg, name){
   if(tvOff) return;
-  flashSync(name);
-  setTimeout(function(){
-    if(type === 'app'){ launchApp(name, arg); }
-    else { launchUrl(name, arg); }
-  }, 200);
+  goToPick(type, arg, name, elapsedNow());
 }
 
-// Navigate whole prim to an internal app (SL-compatible). HOME button returns.
-function launchApp(name, key){
-  const url = APP_URLS[key];
-  if(!url){ alert('App not connected yet — update APP_URLS with your hosted URL.'); return; }
-  window.location.href = url;
-}
-// Navigate whole prim to any URL (top-level, not iframe) so YouTube etc. load.
-function launchUrl(name, url){
-  window.location.href = url;
+// Back-compat shims for any direct callers.
+function launchApp(name, key){ goToPick('app', key, name, elapsedNow()); }
+function launchUrl(name, url){ goToPick('url', url, name, elapsedNow()); }
+
+// On (re)load: if a broadcast is active, join it at the host's current spot.
+function initSync(){
+  try{
+    const sync = new URLSearchParams(location.search).get('sync');
+    if(sync){
+      const parts = sync.split('|');
+      syncToApp(parts[0]||'', parts[1]||'', parts[2]||'');
+    }
+  }catch(e){}
 }
 
 /* ═══════════ HERO BANNER ═══════════ */
@@ -620,7 +645,6 @@ function renderHero(){
 }
 function heroLaunch(){
   if(tvOff) return;
-  // Route through tileClick so hero respects access control + broadcasts resync
   tileClick(null, 'app', encodeURIComponent(HERO_ITEMS[heroIdx].key), HERO_ITEMS[heroIdx].title);
 }
 setInterval(function(){ heroIdx=(heroIdx+1)%HERO_ITEMS.length; renderHero(); }, 9000);
@@ -673,6 +697,7 @@ async function loadWeather(){
 
 /* ═══════════ BOOT ═══════════ */
 window.addEventListener('load', function(){
+  initSync();   // if a broadcast is active, join it at the host's spot & redirect
   renderTiles();
   renderHero();
   loadWeather();
