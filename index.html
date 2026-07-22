@@ -515,19 +515,77 @@ function renderTiles(){
   root.innerHTML = html;
 }
 
+/* ═══════════ RESYNC + ACCESS CONTROL ═══════════ */
+// Access level is set by the LSL controller. Defaults to ALL until told otherwise.
+let accessLevel = 'ALL';   // 'OWNER' | 'GROUP' | 'ALL'
+let isOwner = false;
+let isGroupMember = false;
+
+// Receive config + resync commands from LSL (via prim media javascript: postMessage)
+window.addEventListener('message', function(e){
+  const d = e.data; if(!d || !d.cmd) return;
+  if(d.cmd === 'SET_ACCESS'){
+    accessLevel   = d.access || 'ALL';
+    isOwner       = !!d.isOwner;
+    isGroupMember = !!d.isGroupMember;
+  }
+  if(d.cmd === 'SYNC_APP'){
+    syncToApp(d.appType, decodeURIComponent(d.appArg||''), d.appName||'');
+  }
+});
+
+function canSelect(){
+  if(accessLevel === 'ALL') return true;
+  if(accessLevel === 'OWNER') return isOwner;
+  if(accessLevel === 'GROUP') return isOwner || isGroupMember;
+  return true;
+}
+function showDenied(){
+  const s = document.getElementById('status');
+  if(s) s.textContent = 'ACCESS: ' + accessLevel + ' ONLY';
+  const np = document.getElementById('np-app');
+  if(np){ np.textContent = '⛔ ACCESS DENIED'; np.style.color = '#ff5050';
+    setTimeout(function(){ np.style.color = ''; np.textContent = 'HOME SCREEN'; }, 2200); }
+}
+function flashSync(name){
+  const np = document.getElementById('np-app');
+  if(np) np.textContent = '⚡ SYNCED · ' + name;
+  const s = document.getElementById('status');
+  if(s) s.textContent = 'SYNCED';
+}
+// Tell LSL a selection was made so it can broadcast to every viewer in-region
+function broadcastToLSL(type, arg, name){
+  try{
+    window.parent.postMessage({ cmd:'LAUNCH_APP', appType:type,
+      appArg:encodeURIComponent(arg), appName:name, ts:Date.now() }, '*');
+  }catch(err){}
+}
+
 /* ═══════════ LAUNCH LOGIC ═══════════ */
 let tvOff = false;
 
 function tileClick(el, type, encArg, name){
   if(tvOff) return;
+  if(!canSelect()){ showDenied(); return; }
   const arg = decodeURIComponent(encArg);
-  el.classList.add('launching');
+  if(el) el.classList.add('launching');
   document.getElementById('status').textContent = 'LAUNCHING…';
+  broadcastToLSL(type, arg, name);
   // brief launch flourish, then navigate the whole prim (SL-compatible)
   setTimeout(function(){
     if(type === 'app'){ launchApp(name, arg); }
     else { launchUrl(name, arg); }
   }, 140);
+}
+
+// Remote viewer picked something — sync this screen to match (no re-broadcast)
+function syncToApp(type, arg, name){
+  if(tvOff) return;
+  flashSync(name);
+  setTimeout(function(){
+    if(type === 'app'){ launchApp(name, arg); }
+    else { launchUrl(name, arg); }
+  }, 200);
 }
 
 // Navigate whole prim to an internal app (SL-compatible). HOME button returns.
@@ -562,7 +620,8 @@ function renderHero(){
 }
 function heroLaunch(){
   if(tvOff) return;
-  launchApp(HERO_ITEMS[heroIdx].title, HERO_ITEMS[heroIdx].key);
+  // Route through tileClick so hero respects access control + broadcasts resync
+  tileClick(null, 'app', encodeURIComponent(HERO_ITEMS[heroIdx].key), HERO_ITEMS[heroIdx].title);
 }
 setInterval(function(){ heroIdx=(heroIdx+1)%HERO_ITEMS.length; renderHero(); }, 9000);
 
