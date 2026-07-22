@@ -577,6 +577,7 @@ function resolveUrl(type, arg, elapsed){
 function goToPick(type, arg, name, elapsed){
   const url = resolveUrl(type, arg, elapsed);
   if(!url) return;
+  window.__REDIRECTING = true;   // tell the load handler not to paint home
   const np = document.getElementById('np-app'); if(np) np.textContent = name || 'PLAYING';
   window.location.href = url;
 }
@@ -623,6 +624,8 @@ function initSync(){
     }
   }catch(e){}
 }
+// Run it NOW (during parse), before the home screen renders — no flash.
+initSync();
 
 /* ═══════════ HERO BANNER ═══════════ */
 const HERO_ITEMS = [
@@ -697,7 +700,7 @@ async function loadWeather(){
 
 /* ═══════════ BOOT ═══════════ */
 window.addEventListener('load', function(){
-  initSync();   // if a broadcast is active, join it at the host's spot & redirect
+  if(window.__REDIRECTING) return;   // joining a broadcast — don't paint home
   renderTiles();
   renderHero();
   loadWeather();
